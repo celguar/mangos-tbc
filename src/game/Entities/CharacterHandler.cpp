@@ -127,7 +127,6 @@ void PlayerbotHolder::HandlePlayerBotLoginCallback(QueryResult* dummy, SqlQueryH
         return;
 
     uint32 guid = lqh->GetGuid().GetRawValue();
-
     botSession->HandlePlayerLogin(lqh); // will delete lqh
 
     Player* bot = botSession->GetPlayer();
@@ -166,7 +165,6 @@ void PlayerbotHolder::HandlePlayerBotLoginCallback(QueryResult* dummy, SqlQueryH
         ChatHandler ch(masterSession);
         ch.PSendSysMessage("You are not allowed to control bot %s", bot->GetName());
     }
-
     LogoutPlayerBot(bot->GetObjectGuid());
     sLog.outError("Attempt to add not allowed bot %s, please try to reset all random bots", bot->GetName());
 }
@@ -242,20 +240,6 @@ class CharacterHandler
                 delete holder;
                 return;
             }
-
-            ObjectGuid guid = ((LoginQueryHolder*)holder)->GetGuid();
-            session->HandlePlayerLogin((LoginQueryHolder*)holder);
-
-            Player* player = session->GetPlayer();
-            if (player)
-            {
-                player->CreatePlayerbotMgr();
-                player->GetPlayerbotMgr()->OnPlayerLogin(player);
-                sRandomPlayerbotMgr.OnPlayerLogin(player);
-            }
-#else
-            if (WorldSession* session = sWorld.FindSession(((LoginQueryHolder*)holder)->GetAccountId()))
-                session->HandlePlayerLogin((LoginQueryHolder*)holder);
 #endif
         }
 

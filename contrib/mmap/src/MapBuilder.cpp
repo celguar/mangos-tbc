@@ -756,8 +756,8 @@ namespace MMAP
 
     /**************************************************************************/
     void MapBuilder::buildMoveMapTile(uint32 mapID, uint32 tileX, uint32 tileY,
-                                      MeshData& meshData, float bmin[3], float bmax[3],
-                                      dtNavMesh* navMesh)
+        MeshData& meshData, float bmin[3], float bmax[3],
+        dtNavMesh* navMesh)
     {
         // console output
         char tileString[20];
@@ -819,8 +819,8 @@ namespace MMAP
         }
 
         // merge per tile poly and detail meshes
-        rcPolyMesh** pmmerge = new rcPolyMesh*[TILES_PER_MAP * TILES_PER_MAP];
-        rcPolyMeshDetail** dmmerge = new rcPolyMeshDetail*[TILES_PER_MAP * TILES_PER_MAP];
+        rcPolyMesh** pmmerge = new rcPolyMesh * [TILES_PER_MAP * TILES_PER_MAP];
+        rcPolyMeshDetail** dmmerge = new rcPolyMeshDetail * [TILES_PER_MAP * TILES_PER_MAP];
 
         int nmerge = 0;
         for (int y = 0; y < TILES_PER_MAP; ++y)
@@ -860,9 +860,9 @@ namespace MMAP
         rcMergePolyMeshDetails(m_rcContext, dmmerge, nmerge, *iv.polyMeshDetail);
 
         // free things up
-        delete [] pmmerge;
-        delete [] dmmerge;
-        delete [] tiles;
+        delete[] pmmerge;
+        delete[] dmmerge;
+        delete[] tiles;
 
         // set polygons as walkable
         // TODO: special flags for DYNAMIC polygons, ie surfaces that can be turned on and off
@@ -941,7 +941,7 @@ namespace MMAP
                 continue;
             }
             if (!params.polyCount || !params.polys ||
-                    TILES_PER_MAP * TILES_PER_MAP == params.polyCount)
+                TILES_PER_MAP * TILES_PER_MAP == params.polyCount)
             {
                 // we have flat tiles with no actual geometry - don't build those, its useless
                 // keep in mind that we do output those into debug info
@@ -1001,8 +1001,7 @@ namespace MMAP
 
             // now that tile is written to disk, we can unload it
             navMesh->removeTile(tileRef, nullptr, nullptr);
-        }
-        while (0);
+        }         while (0);
 
         if (m_debug)
         {
@@ -1020,7 +1019,7 @@ namespace MMAP
     }
 
     bool MapBuilder::buildCommonTile(const char* tileString, Tile& tile, rcConfig& tileCfg, float* tVerts, int tVertCount, int* tTris, int tTriCount, float* lVerts, int lVertCount,
-                                     int* lTris, int lTriCount, uint8* lTriFlags)
+        int* lTris, int lTriCount, uint8* lTriFlags)
     {
         // Build heightfield for walkable area
         tile.solid = rcAllocHeightfield();
@@ -1139,41 +1138,41 @@ namespace MMAP
         if (m_skipContinents)
             switch (mapID)
             {
-                case 0:
-                case 1:
-                case 530:
-                    return true;
-                default:
-                    break;
+            case 0:
+            case 1:
+            case 530:
+                return true;
+            default:
+                break;
             }
 
         if (m_skipJunkMaps)
             switch (mapID)
             {
-                case 13:    // test.wdt
-                case 25:    // ScottTest.wdt
-                case 29:    // Test.wdt
-                case 42:    // Colin.wdt
-                case 169:   // EmeraldDream.wdt (unused, and very large)
-                case 451:   // development.wdt
+            case 13:    // test.wdt
+            case 25:    // ScottTest.wdt
+            case 29:    // Test.wdt
+            case 42:    // Colin.wdt
+            case 169:   // EmeraldDream.wdt (unused, and very large)
+            case 451:   // development.wdt
+                return true;
+            default:
+                if (isTransportMap(mapID))
                     return true;
-                default:
-                    if (isTransportMap(mapID))
-                        return true;
-                    break;
+                break;
             }
 
         if (m_skipBattlegrounds)
             switch (mapID)
             {
-                case 30:    // AV
-                case 37:    // ?
-                case 489:   // WSG
-                case 529:   // AB
-                case 566:   // EotS
-                    return true;
-                default:
-                    break;
+            case 30:    // AV
+            case 37:    // ?
+            case 489:   // WSG
+            case 529:   // AB
+            case 566:   // EotS
+                return true;
+            default:
+                break;
             }
 
         return false;
@@ -1185,18 +1184,18 @@ namespace MMAP
         switch (mapID)
         {
             // transport maps
-            case 582:
-            case 584:
-            case 586:
-            case 587:
-            case 588:
-            case 589:
-            case 590:
-            case 591:
-            case 593:
-                return true;
-            default:
-                return false;
+        case 582:
+        case 584:
+        case 586:
+        case 587:
+        case 588:
+        case 589:
+        case 590:
+        case 591:
+        case 593:
+            return true;
+        default:
+            return false;
         }
     }
 
@@ -1235,9 +1234,9 @@ namespace MMAP
             {"mergeRegionArea", 50},
             {"minRegionArea", 60},
             {"walkableClimb", 4},
-            {"walkableHeight", 6},
+            {"walkableHeight", 3},
             {"walkableRadius", 2},
-            {"walkableSlopeAngle", 60.0f},
+            {"walkableSlopeAngle", 75.0f},
             {"liquidFlagMergeThreshold", 0.0f},
         };
     }

@@ -74,5 +74,6 @@ extern DatabaseType WorldDatabase;
 extern DatabaseType CharacterDatabase;
 extern DatabaseType LoginDatabase;
 extern DatabaseType LogsDatabase;
+extern DatabaseType PlayerbotDatabase;
 
 #endif

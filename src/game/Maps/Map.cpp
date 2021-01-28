@@ -41,6 +41,10 @@
 #include "AI/ScriptDevAI/ScriptDevAIMgr.h"
 #include "BattleGround/BattleGroundMgr.h"
 
+#ifdef ENABLE_PLAYERBOTS
+#include "playerbot.h"
+#endif
+
 #ifdef BUILD_METRICS
  #include "Metric/Metric.h"
 #endif
@@ -944,6 +948,7 @@ void Map::Update(const uint32& t_diff)
 #endif
 
     // non-player active objects
+    bool updateObj = urand(0, (HasRealPlayers() ? maxDiff : (maxDiff * 3))) < 10;
     if (!m_activeNonPlayers.empty())
     {
         for (m_activeNonPlayersIter = m_activeNonPlayers.begin(); m_activeNonPlayersIter != m_activeNonPlayers.end();)
@@ -1085,7 +1090,12 @@ void Map::Remove(Player* player, bool remove)
     SendRemoveTransports(player);
     UpdateObjectVisibility(player, cell, p);
 
+#ifdef ENABLE_PLAYERBOTS
+    if (!player->GetPlayerbotAI())
+        player->ResetMap();
+#else
     player->ResetMap();
+#endif
     if (remove)
         DeleteFromWorld(player);
 }

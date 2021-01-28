@@ -933,6 +933,10 @@ class Player : public Unit
         void Update(const uint32 diff) override;
         void Heartbeat() override;
 
+#ifdef ENABLE_PLAYERBOTS
+        void UpdateAI(const uint32 diff, bool minimal = false);
+#endif
+
         static bool BuildEnumData(QueryResult* result,  WorldPacket& p_data);
 
         void SendInitialPacketsBeforeAddToMap();
@@ -1387,6 +1391,10 @@ class Player : public Unit
         /*********************************************************/
 
         bool LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder);
+
+#ifdef ENABLE_PLAYERBOTS
+        bool MinimalLoadFromDB(QueryResult *result, uint32 guid);
+#endif
 
         static uint32 GetZoneIdFromDB(ObjectGuid guid);
         static uint32 GetLevelFromDB(ObjectGuid guid);

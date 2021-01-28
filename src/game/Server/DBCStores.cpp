@@ -90,6 +90,12 @@ static std::map<EmotesTextSoundKey, EmotesTextSoundEntry const*> sEmotesTextSoun
 DBCStorage <EmotesTextSoundEntry> sEmotesTextSoundStore(EmotesTextSoundEntryfmt);
 #endif
 
+#ifdef ENABLE_PLAYERBOTS
+typedef std::tuple<uint32, uint32, uint32> EmotesTextSoundKey;
+static std::map<EmotesTextSoundKey, EmotesTextSoundEntry const*> sEmotesTextSoundMap;
+DBCStorage <EmotesTextSoundEntry> sEmotesTextSoundStore(EmotesTextSoundEntryfmt);
+#endif
+
 //DBCStorage <FactionEntry> sFactionStore(FactionEntryfmt);
 DBCStorage <FactionTemplateEntry> sFactionTemplateStore(FactionTemplateEntryfmt);
 
@@ -322,6 +328,14 @@ void LoadDBCStores(const std::string& dataPath)
     LoadDBC(availableDbcLocales, bar, bad_dbc_files, sDurabilityQualityStore,   dbcPath, "DurabilityQuality.dbc");
     LoadDBC(availableDbcLocales, bar, bad_dbc_files, sEmotesStore,              dbcPath, "Emotes.dbc");
     LoadDBC(availableDbcLocales, bar, bad_dbc_files, sEmotesTextStore,          dbcPath, "EmotesText.dbc");
+
+#ifdef ENABLE_PLAYERBOTS
+    LoadDBC(availableDbcLocales, bar, bad_dbc_files, sEmotesTextSoundStore, dbcPath, "EmotesTextSound.dbc");
+    for (uint32 i = 0; i < sEmotesTextSoundStore.GetNumRows(); ++i)
+        if (EmotesTextSoundEntry const* entry = sEmotesTextSoundStore.LookupEntry(i))
+            sEmotesTextSoundMap[EmotesTextSoundKey(entry->EmotesTextId, entry->RaceId, entry->SexId)] = entry;
+#endif
+
     // LoadDBC(availableDbcLocales, bar, bad_dbc_files, sFactionStore,             dbcPath, "Faction.dbc");
 
 #ifdef ENABLE_PLAYERBOTS

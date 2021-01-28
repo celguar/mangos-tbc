@@ -103,6 +103,11 @@ class ChatHandler
 
         WorldSession* GetSession() { return m_session; }
 
+#ifdef ENABLE_PLAYERBOTS
+        WorldSession* GetSession() { return m_session; }
+        bool HandlePerfMonCommand(char* args);
+#endif
+
         /**
         * \brief Prepare SMSG_GM_MESSAGECHAT/SMSG_MESSAGECHAT
         *

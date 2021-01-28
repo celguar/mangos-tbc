@@ -315,6 +315,15 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
 
             if (lang != LANG_ADDON && !m_anticheat->IsSilenced())
                 m_anticheat->Whisper(msg, player->GetObjectGuid());
+#ifdef ENABLE_PLAYERBOTS
+            if (player->GetPlayerbotAI())
+            {
+                player->GetPlayerbotAI()->HandleCommand(type, msg, *GetPlayer());
+                GetPlayer()->m_speakTime = 0;
+                GetPlayer()->m_speakCount = 0;
+            }
+#endif
+
         } break;
 
         case CHAT_MSG_PARTY:
