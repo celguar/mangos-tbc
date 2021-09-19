@@ -66,6 +66,15 @@ void WorldSession::HandleRepopRequestOpcode(WorldPacket& recv_data)
     GetPlayer()->RemovePet(PET_SAVE_REAGENTS);
     GetPlayer()->BuildPlayerRepop();
     GetPlayer()->RepopAtGraveyard();
+
+
+    /*N1T Custom - Fly as Spirit*/
+    if (sWorld.getConfig(CONFIG_BOOL_FLY_AS_SPIRIT)) {
+        GetPlayer()->SetCanFly(true);
+        GetPlayer()->Mount(23574);
+        GetPlayer()->UpdateSpeed(MOVE_FLIGHT, true, 3);
+    }
+
 }
 
 void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)

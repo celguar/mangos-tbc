@@ -718,6 +718,10 @@ void World::LoadConfigSettings(bool reload)
     // Battle for dark portal event
     setConfig(CONFIG_BOOL_DARK_PORTAL_EVENT, "Custom.DarkPortalEvent", false);
     setConfig(CONFIG_BOOL_DARK_PORTAL_EVENT_RESET, "Custom.DarkPortalEventReset", false);
+
+    setConfig(CONFIG_BOOL_FLY_AS_SPIRIT, "Custom.FlyAsSpirit", false);
+
+
     setConfig(CONFIG_UINT32_DARK_PORTAL_EVENT_TIMER, "Custom.DarkPortalEventTimer", 60);
 
     setConfig(CONFIG_BOOL_OFFHAND_CHECK_AT_TALENTS_RESET, "OffhandCheckAtTalentsReset", false);

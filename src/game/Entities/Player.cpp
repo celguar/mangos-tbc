@@ -4615,6 +4615,12 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
 
     SetDeathState(ALIVE);
 
+    /*N1T Custom - Fly as Spirit*/
+    if (sWorld.getConfig(CONFIG_BOOL_FLY_AS_SPIRIT)) {
+        SetCanFly(false);
+        Unmount();
+        UpdateSpeed(MOVE_FLIGHT, true, 1);
+    }
     if (getRace() == RACE_NIGHTELF)
         RemoveAurasDueToSpell(20584);                       // speed bonuses
     RemoveAurasDueToSpell(8326);                            // SPELL_AURA_GHOST
