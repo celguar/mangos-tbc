@@ -8,6 +8,7 @@
 extern void AddSC_battleground();
 
 // custom
+extern void AddSC_Transmog();
 
 // examples
 extern void AddSC_example_creature();
@@ -373,6 +374,7 @@ void AddScripts()
     AddSC_battleground();
 
     // custom
+    AddSC_Transmog();
 
     // examples
     AddSC_example_creature();

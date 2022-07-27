@@ -1641,7 +1641,6 @@ void World::SetInitialWorldSettings()
     auctionbot.Init();
 #endif
 #endif
-
     sLog.outString("---------------------------------------");
     sLog.outString("      CMANGOS: World initialized       ");
     sLog.outString("---------------------------------------");
