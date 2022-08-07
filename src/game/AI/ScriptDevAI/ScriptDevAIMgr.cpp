@@ -17,6 +17,9 @@
 #include "system/ScriptLoader.h"
 #endif
 
+#include "scripts/custom/CustomBase/ScriptItem.h"
+#include "scripts/custom/CustomBase/ScriptPlayer.h"
+
 INSTANTIATE_SINGLETON_1(ScriptDevAIMgr);
 
 void FillSpellSummary();
@@ -399,6 +402,37 @@ bool ScriptDevAIMgr::OnItemLoot(Player* pPlayer, Item* pItem, bool apply)
     return pTempScript->pItemLoot(pPlayer, pItem, apply);
 }
 
+bool ScriptDevAIMgr::OnPlayerItemLoot(Player* pPlayer, Item* pItem)
+{
+    for (const auto& script : m_scripts)
+    {
+        const auto& script_ptr = dynamic_cast<ScriptPlayer*>(script);
+        if (script_ptr)
+            script_ptr->OnLootItem(pPlayer, pItem, 0);
+    }
+    return true;
+}
+
+void ScriptDevAIMgr::OnPlayerLogin(Player* pPlayer)
+{
+    for (const auto& script : m_scripts)
+    {
+        const auto& script_ptr = dynamic_cast<ScriptPlayer*>(script);
+        if (script_ptr)
+            script_ptr->OnLogin(pPlayer);
+    }
+}
+
+void ScriptDevAIMgr::OnPlayerLogout(Player* pPlayer)
+{
+    for (const auto& script : m_scripts)
+    {
+        const auto& script_ptr = dynamic_cast<ScriptPlayer*>(script);
+        if (script_ptr)
+            script_ptr->OnLogout(pPlayer);
+    }
+}
+
 bool ScriptDevAIMgr::OnEffectDummy(Unit* pCaster, uint32 spellId, SpellEffectIndex effIndex, Creature* pTarget, ObjectGuid originalCasterGuid)
 {
     Script* pTempScript = GetScript(pTarget->GetScriptId());
@@ -461,14 +495,11 @@ InstanceData* ScriptDevAIMgr::CreateInstanceData(Map* pMap)
 
 ScriptDevAIMgr::~ScriptDevAIMgr()
 {
-    // Free resources before library unload
-    for (SDScriptVec::const_iterator itr = m_scripts.begin(); itr != m_scripts.end(); ++itr)
-        delete *itr;
+    for (auto& ref : m_scripts)
+        delete ref;
 
     m_scripts.clear();
-
     m_scriptCount = 0;
-
     setScriptLibraryErrorFile(nullptr, nullptr);
 }
 
@@ -513,7 +544,7 @@ void ScriptDevAIMgr::Initialize()
     bar.step();
 
     // Resize script ids to needed amount of assigned ScriptNames (from core)
-    m_scripts.resize(GetScriptIdsCount(), nullptr);
+     m_scripts.resize(GetScriptIdsCount(), nullptr);
 
     FillSpellSummary();
 
@@ -539,7 +570,9 @@ void ScriptDevAIMgr::LoadScriptNames()
                               "UNION "
                               "SELECT DISTINCT(ScriptName) FROM instance_template WHERE ScriptName <> '' "
                               "UNION "
-                              "SELECT DISTINCT(ScriptName) FROM world_template WHERE ScriptName <> ''");
+                              "SELECT DISTINCT(ScriptName) FROM world_template WHERE ScriptName <> '' "
+                              "UNION "
+                              "SELECT DISTINCT(ScriptName) FROM custom_scripts WHERE ScriptName <> ''");
 
     if (!result)
     {

@@ -10335,6 +10335,7 @@ Item* Player::StoreNewItem(ItemPosCountVec const& dest, uint32 item, bool update
     if (pItem)
     {
         ItemAddedQuestCheck(item, count);
+        sScriptDevAIMgr.OnPlayerItemLoot(this, pItem);
         pItem = StoreItem(dest, pItem, update);
     }
     return pItem;

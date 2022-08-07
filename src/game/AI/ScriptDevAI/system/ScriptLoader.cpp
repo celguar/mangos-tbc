@@ -9,6 +9,7 @@ extern void AddSC_battleground();
 
 // custom
 extern void AddSC_Transmog();
+extern void AddSC_random_enchant();
 
 // examples
 extern void AddSC_example_creature();
@@ -373,6 +374,7 @@ void AddScripts()
 
     // custom
     AddSC_Transmog();
+    AddSC_random_enchant();
 
     // examples
     AddSC_example_creature();
