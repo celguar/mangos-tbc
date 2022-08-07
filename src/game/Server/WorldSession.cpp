@@ -771,6 +771,9 @@ void WorldSession::LogoutPlayer()
             sTransmogrification->dataMap.erase(it->first);
         sTransmogrification->entryMap.erase(pGUID);
 
+        // Script handle
+        sScriptDevAIMgr.OnPlayerLogout(_player);
+
 #ifdef PRESETS
         if (sTransmogrification->GetEnableSets())
             sTransmogrification->UnloadPlayerSets(pGUID);
