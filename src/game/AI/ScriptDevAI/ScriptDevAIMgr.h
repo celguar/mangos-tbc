@@ -188,6 +188,13 @@ public: /* ItemScript */
 public: /* PlayerScript*/
     void OnPlayerLogin(Player* pPlayer);
     void OnPlayerLogout(Player* pPlayer);
+    void OnPlayerPreUpdate(Player* pPlayer, const uint32& diff);
+    void OnPlayerUpdate(Player* pPlayer, const uint32& diff);
+    void OnPlayerPostUpdate(Player* pPlayer, const uint32& diff);
+    void OnPlayerKillUnit(Player* pPlayer, const Unit* unit);
+    void OnPlayerPvPKill(Player* pPlayer, Player* pVictim);
+    void OnPlayerXpGain(Player* pPlayer, const uint32& xp_gain);
+    void OnPlayerLevelUp(Player* pPlayer);
     bool OnPlayerItemLoot(Player* pPlayer, Item* pItem);
 
 public: /* AreaTriggerScript */

@@ -1463,6 +1463,9 @@ void Player::Update(const uint32 diff)
 
     UpdateAfkReport(now);
 
+    // Script handle
+    sScriptDevAIMgr.OnPlayerUpdate(this, diff);
+
     // Update items that have just a limited lifetime
     if (now > m_Last_tick)
         UpdateItemDuration(uint32(now - m_Last_tick));
@@ -2729,6 +2732,9 @@ void Player::GiveXP(uint32 xp, Creature* victim, float groupRate)
         nextLvlXP = GetUInt32Value(PLAYER_NEXT_LEVEL_XP);
     }
 
+    // Handle Script
+    sScriptDevAIMgr.OnPlayerXpGain(this, bonus_xp);
+
     SetUInt32Value(PLAYER_XP, newXP);
 }
 
@@ -2738,6 +2744,9 @@ void Player::GiveLevel(uint32 level)
 {
     if (level == GetLevel())
         return;
+
+    // Handle Script
+    sScriptDevAIMgr.OnPlayerLevelUp(this);
 
     uint32 plClass = getClass();
 
@@ -6767,6 +6776,9 @@ bool Player::RewardHonor(Unit* uVictim, uint32 groupsize, float honor)
         {
             Player* pVictim = (Player*)uVictim;
 
+            // Handle Script
+            sScriptDevAIMgr.OnPlayerPvPKill(this, pVictim);
+
             if (GetTeam() == pVictim->GetTeam() && !sWorld.IsFFAPvPRealm())
                 return false;
 
@@ -6851,6 +6863,7 @@ bool Player::RewardHonor(Unit* uVictim, uint32 groupsize, float honor)
     ModifyHonorPoints(int32(honor));
 
     ApplyModUInt32Value(PLAYER_FIELD_TODAY_CONTRIBUTION, uint32(honor), true);
+
     return true;
 }
 
@@ -20639,6 +20652,9 @@ void Player::RewardSinglePlayerAtKill(Unit* pVictim)
     // xp and reputation only in !PvP case
     if (!pVictim->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED) && pVictim->GetTypeId() == TYPEID_UNIT)
     {
+        // Handle Script
+        sScriptDevAIMgr.OnPlayerKillUnit(this, pVictim);
+
         Creature* creatureVictim = static_cast<Creature*>(pVictim);
         RewardReputation(creatureVictim, 1);
         GiveXP(MaNGOS::XP::Gain(this, creatureVictim), creatureVictim);
