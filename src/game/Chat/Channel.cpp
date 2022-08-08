@@ -44,7 +44,7 @@ Channel::Channel(const std::string& name, uint32 channel_id/* = 0*/)
             m_flags |= CHANNEL_FLAG_NOT_LFG;
 
         // Custom features:
-        m_realmzone = false;                                             // channel language matches realm zone
+        m_realmzone = true;                                             // channel language matches realm zone
     }
     else // it's custom channel
     {
@@ -52,7 +52,7 @@ Channel::Channel(const std::string& name, uint32 channel_id/* = 0*/)
         m_flags = CHANNEL_FLAG_CUSTOM;                                  // default for all custom channels
 
         // Custom features:
-        m_realmzone = false;// sObjectMgr.CheckPublicMessageLanguage(m_name);    // channel language matches channel name
+        m_realmzone = sObjectMgr.CheckPublicMessageLanguage(m_name);    // channel language matches channel name
     }
 }
 
