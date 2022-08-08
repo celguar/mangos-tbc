@@ -13228,7 +13228,7 @@ void Player::AddQuest(Quest const* pQuest, Object* questGiver)
 
 #ifdef ENABLE_PLAYERBOTS
     // quest accept scripts
-    if (this != questGiver)
+    if (this != questGiver && questGiver)
 #else
     if (questGiver)
 #endif
