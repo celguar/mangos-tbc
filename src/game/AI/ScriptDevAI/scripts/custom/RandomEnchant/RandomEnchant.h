@@ -28,4 +28,6 @@ private:
 		uint32 exlusive_sub_class;
 	};
 	std::vector<item_enchantment_random_tiers> _enchants;
+	std::vector<uint32> _chances;
+	ItemQualities _quality_min, _quality_max;
 };
