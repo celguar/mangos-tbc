@@ -119,15 +119,21 @@ void SpawnGroup::Spawn(bool force)
     if (!m_enabled && !force)
         return;
 
+    // duplicated code for optimization - way fewer cond fails
+    if ((m_entry.Flags & SPAWN_GROUP_DESPAWN_ON_COND_FAIL) != 0) // must be before count check
+    {
+        if (!IsWorldstateConditionSatisfied())
+        {
+            Despawn();
+            return;
+        }
+    }
+
     if (m_objects.size() >= m_entry.MaxCount)
         return;
 
     if (!IsWorldstateConditionSatisfied())
-    {
-        if ((m_entry.Flags & SPAWN_GROUP_DESPAWN_ON_COND_FAIL) != 0)
-            Despawn();
         return;
-    }
 
     if (m_entry.HasChancedSpawns && m_chosenSpawns.size() >= m_entry.MaxCount)
         return;
@@ -405,6 +411,14 @@ void CreatureGroup::TriggerLinkingEvent(uint32 event, Unit* target)
 
             ClearRespawnTimes();
             break;
+        case CREATURE_GROUP_EVENT_MEMBER_DIED:
+            for (auto const& data : m_objects)
+            {
+                uint32 dbGuid = data.first;
+                if (Creature* creature = m_map.GetCreature(dbGuid))
+                    creature->AI()->CreatureGroupMemberDied(target);
+            }
+            break;
     }
 }
 
@@ -442,11 +456,27 @@ void CreatureGroup::MoveHome()
     }
 }
 
-void CreatureGroup::Despawn()
+void CreatureGroup::Despawn(uint32 timeMSToDespawn, bool onlyAlive)
+{
+    for (SpawnGroupDbGuids const& sgEntry : m_entry.DbGuids)
+        if (Creature* creature = m_map.GetCreature(sgEntry.DbGuid))
+            creature->ForcedDespawn(timeMSToDespawn, onlyAlive);
+}
+
+bool CreatureGroup::IsOutOfCombat()
 {
     for (auto objItr : m_objects)
+    {
         if (Creature* creature = m_map.GetCreature(objItr.first))
-            creature->ForcedDespawn();
+        {
+            if (!creature->IsAlive())
+                continue;
+
+            if (creature->IsInCombat())
+                return false;
+        }
+    }
+    return true;
 }
 
 void CreatureGroup::ClearRespawnTimes()
@@ -467,11 +497,11 @@ void GameObjectGroup::RemoveObject(WorldObject* wo)
     m_map.GetPersistentState()->RemoveGameobjectFromGrid(wo->GetDbGuid(), data);
 }
 
-void GameObjectGroup::Despawn()
+void GameObjectGroup::Despawn(uint32 timeMSToDespawn /*= 0*/)
 {
     for (auto objItr : m_objects)
         if (GameObject* go = m_map.GetGameObject(objItr.first))
-            go->ForcedDespawn();
+            go->ForcedDespawn(timeMSToDespawn);
 }
 
 ////////////////////
@@ -503,7 +533,7 @@ FormationData::FormationData(CreatureGroup* gData, FormationEntrySPtr fEntry) :
 
 FormationData::~FormationData()
 {
-    //sLog.outDebug("Deleting formation (%u)!!!!!", m_groupData->GetGroupEntry().Id);
+    sLog.outDebug("Deleting formation (%u)!!!!!", m_groupData->GetGroupEntry().Id);
 }
 
 bool FormationData::SetFollowersMaster()
@@ -596,8 +626,14 @@ void FormationData::ClearMoveGen()
         Unit* slotUnit = slot->GetOwner();
         if (slotUnit && slotUnit->IsAlive())
         {
+            if (m_fEntry->IsDynamic && slot->IsFormationMaster())
+                continue;
             if (slot->IsFormationMaster())
             {
+                // do not change leader movement in dynamic state, script have to handle that
+                if (m_fEntry->IsDynamic)
+                    continue;
+
                 m_lastWP = slotUnit->GetMotionMaster()->getLastReachedWaypoint();
                 m_wpPathId = slotUnit->GetMotionMaster()->GetPathId();
             }
@@ -623,14 +659,14 @@ void FormationData::SetMasterMovement()
     newMaster->GetMotionMaster()->Clear(true, true);
     if (m_masterMotionType == WAYPOINT_MOTION_TYPE)
     {
-        newMaster->GetMotionMaster()->MoveWaypoint(m_fEntry->MovementID, PATH_FROM_WAYPOINT_PATH);
+        newMaster->GetMotionMaster()->MoveWaypoint(m_fEntry->MovementIdOrWander, PATH_FROM_WAYPOINT_PATH);
         newMaster->GetMotionMaster()->SetNextWaypoint(m_lastWP + 1);
         m_wpPathId = 0;
         m_lastWP = 0;
     }
     else if (m_masterMotionType == LINEAR_WP_MOTION_TYPE)
     {
-        newMaster->GetMotionMaster()->MoveLinearWP(m_fEntry->MovementID, PATH_FROM_WAYPOINT_PATH);
+        newMaster->GetMotionMaster()->MoveLinearWP(m_fEntry->MovementIdOrWander, PATH_FROM_WAYPOINT_PATH);
         newMaster->GetMotionMaster()->SetNextWaypoint(m_lastWP + 1);
         m_wpPathId = 0;
         m_lastWP = 0;
@@ -700,7 +736,11 @@ bool FormationData::TrySetNewMaster(Unit* masterCandidat /*= nullptr*/)
         StopFollower();
         SwitchSlotOwner(masterSlot, aliveSlot);
         FixSlotsPositions();
-        SetMasterMovement();
+
+        // will start master movement only if its not dynamic formation
+        if (!m_fEntry->IsDynamic)
+            SetMasterMovement();
+
         SetFollowersMaster();
         return true;
     }
@@ -759,6 +799,7 @@ void FormationData::Reset()
     {
         TrySetNewMaster(masterSlotItr->second->GetOwner());
     }
+    StartFollower();
 }
 
 void FormationData::OnDeath(Creature* creature)
@@ -1169,7 +1210,7 @@ std::string FormationData::to_string() const
     result << "Shape: "              << fType                << "\n";
     result << "Spread: "             << m_currentSpread      << "\n";
     result << "MovementType: "       << fMoveType            << "\n";
-    result << "MovementId: "         << m_fEntry->MovementID << "\n";
+    result << "MovementId: "         << m_fEntry->MovementIdOrWander << "\n";
     result << "Options: "            << fOptions             << "\n";
     result << "Comment: "            << m_fEntry->Comment    << "\n";
 
@@ -1185,6 +1226,23 @@ std::string FormationData::to_string() const
     }
 
     return result.str();
+}
+
+// Change movement data so it can resume it if leader change
+void FormationData::SetMovementInfo(MovementGeneratorType moveType, uint32 wanderOrPahtId)
+{
+    m_fEntry->MovementIdOrWander = wanderOrPahtId;
+    m_fEntry->MovementType = moveType;
+    m_masterMotionType = moveType;
+    m_lastWP = 0;
+    auto master = GetMaster();
+    if (master)
+    {
+        static_cast<Creature*>(master)->GetRespawnCoord(m_spawnPos.x, m_spawnPos.y, m_spawnPos.z, nullptr, &m_spawnPos.radius);
+
+        if (wanderOrPahtId)
+            m_spawnPos.radius = static_cast<float>(wanderOrPahtId);
+    }
 }
 
 void FormationData::Update()

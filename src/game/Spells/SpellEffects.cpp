@@ -3003,15 +3003,21 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
     else if (itemTarget)
         libraryResult = sScriptDevAIMgr.OnEffectDummy(m_caster, m_spellInfo->Id, eff_idx, itemTarget, m_originalCasterGUID);
 
-    if (unitTarget && !libraryResult)
-    {
-        // Previous effect might have started script
-        if (ScriptMgr::CanSpellEffectStartDBScript(m_spellInfo, eff_idx))
-        {
-            DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "Spell ScriptStart spellid %u in EffectDummy", m_spellInfo->Id);
-            m_caster->GetMap()->ScriptsStart(sSpellScripts, m_spellInfo->Id, m_caster, unitTarget);
-        }
-    }
+    if (libraryResult || (!unitTarget && !gameObjTarget))
+        return;
+
+    // Previous effect might have started script
+    if (!ScriptMgr::CanSpellEffectStartDBScript(m_spellInfo, eff_idx))
+        return;
+
+    auto& data = SpellTargetMgr::GetSpellTargetingData(m_spellInfo->Id);
+    SpellTargetImplicitType effectTargetType = data.implicitType[eff_idx];
+
+    DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "Spell ScriptStart spellid %u in EffectDummy", m_spellInfo->Id);
+    if (effectTargetType == TARGET_TYPE_UNIT || effectTargetType == TARGET_TYPE_UNIT_DEST)
+        m_trueCaster->GetMap()->ScriptsStart(sSpellScripts, m_spellInfo->Id, m_trueCaster, unitTarget);
+    else if (effectTargetType == TARGET_TYPE_GAMEOBJECT || (effectTargetType == TARGET_TYPE_LOCK && gameObjTarget))
+        m_trueCaster->GetMap()->ScriptsStart(sSpellScripts, m_spellInfo->Id, m_trueCaster, gameObjTarget);
 }
 
 void Spell::EffectTriggerSpellWithValue(SpellEffectIndex eff_idx)
@@ -3483,13 +3489,9 @@ void Spell::EffectPowerDrain(SpellEffectIndex eff_idx)
 
 void Spell::EffectSendEvent(SpellEffectIndex effectIndex)
 {
-    /*
-    we do not handle a flag dropping or clicking on flag in battleground by sendevent system
-    TODO: Actually, why not...
-    */
     DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "Spell ScriptStart %u for spellid %u in EffectSendEvent ", m_spellInfo->EffectMiscValue[effectIndex], m_spellInfo->Id);
 
-    StartEvents_Event(m_caster->GetMap(), m_spellInfo->EffectMiscValue[effectIndex], m_caster, focusObject, true, m_caster);
+    StartEvents_Event(m_trueCaster->GetMap(), m_spellInfo->EffectMiscValue[effectIndex], m_trueCaster, m_eventTarget, true);
 }
 
 void Spell::EffectPowerBurn(SpellEffectIndex eff_idx)
@@ -4272,6 +4274,9 @@ void Spell::EffectSummonType(SpellEffectIndex eff_idx)
             {
                 level = engineeringSkill / 5;
                 amount = 1;                                 // TODO HACK (needs a neat way of doing)
+                // in TBC max levels are clamped
+                if (CreatureInfo const* cInfo = ObjectMgr::GetCreatureTemplate(m_spellInfo->EffectMiscValue[eff_idx]))
+                    level = std::min(cInfo->MaxLevel, level);
             }
         }
         // other cases are covered above by using level from template
@@ -4489,11 +4494,9 @@ bool Spell::DoSummonPet(CreatureSummonPositions& list, SummonPropertiesEntry con
             list[0].creature = spawnCreature;
             return true;
         }
-
-        spawnCreature->setPetType(SUMMON_PET);
     }
-    else
-        spawnCreature->setPetType(GUARDIAN_PET);
+
+    spawnCreature->setPetType(SUMMON_PET);
 
     CreatureInfo const* cInfo = ObjectMgr::GetCreatureTemplate(pet_entry);
     if (!cInfo)
@@ -4556,10 +4559,7 @@ bool Spell::DoSummonPet(CreatureSummonPositions& list, SummonPropertiesEntry con
     else
         spawnCreature->SetByteValue(UNIT_FIELD_BYTES_2, UNIT_BYTES_2_OFFSET_DEBUFF_LIMIT, UNIT_BYTE2_CREATURE_DEBUFF_LIMIT);
 
-    if (spawnCreature->getPetType() == GUARDIAN_PET)
-        m_caster->AddGuardian(spawnCreature);
-    else
-        m_caster->SetPet(spawnCreature);
+    m_caster->SetPet(spawnCreature);
 
     if (m_caster->IsImmuneToNPC())
         spawnCreature->SetImmuneToNPC(true);
@@ -5807,7 +5807,7 @@ void Spell::EffectSummonObjectWild(SpellEffectIndex eff_idx)
 
     GameObject* pGameObj = new GameObject;
 
-    WorldObject* target = focusObject;
+    WorldObject* target = m_eventTarget;
     if (!target)
         target = m_trueCaster;
 
@@ -5818,8 +5818,8 @@ void Spell::EffectSummonObjectWild(SpellEffectIndex eff_idx)
         m_trueCaster->GetClosePoint(x, y, z, DEFAULT_WORLD_OBJECT_SIZE);
 
     Map* map = target->GetMap();
-
-    if (!pGameObj->Create(map->GenerateLocalLowGuid(HIGHGUID_GAMEOBJECT), gameobject_id, map,
+    uint32 lowGuid = map->GenerateLocalLowGuid(HIGHGUID_GAMEOBJECT);
+    if (!pGameObj->Create(lowGuid, lowGuid, gameobject_id, map,
                           x, y, z, target->GetOrientation()))
     {
         delete pGameObj;
@@ -7309,7 +7309,7 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
     }
 
     // normal DB scripted effect
-    if (!unitTarget)
+    if (!unitTarget && !gameObjTarget)
         return;
 
     // Script based implementation. Must be used only for not good for implementation in core spell effects
@@ -7324,8 +7324,14 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
     if (!ScriptMgr::CanSpellEffectStartDBScript(m_spellInfo, eff_idx))
         return;
 
+    auto& data = SpellTargetMgr::GetSpellTargetingData(m_spellInfo->Id);
+    SpellTargetImplicitType effectTargetType = data.implicitType[eff_idx];
+
     DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "Spell ScriptStart spellid %u in EffectScriptEffect", m_spellInfo->Id);
-    m_caster->GetMap()->ScriptsStart(sSpellScripts, m_spellInfo->Id, m_caster, unitTarget);
+    if (effectTargetType == TARGET_TYPE_UNIT || effectTargetType == TARGET_TYPE_UNIT_DEST)
+        m_trueCaster->GetMap()->ScriptsStart(sSpellScripts, m_spellInfo->Id, m_trueCaster, unitTarget);
+    else if (effectTargetType == TARGET_TYPE_GAMEOBJECT || (effectTargetType == TARGET_TYPE_LOCK && gameObjTarget))
+        m_trueCaster->GetMap()->ScriptsStart(sSpellScripts, m_spellInfo->Id, m_trueCaster, gameObjTarget);
 }
 
 void Spell::EffectSanctuary(SpellEffectIndex /*eff_idx*/)
@@ -7399,7 +7405,8 @@ void Spell::EffectDuel(SpellEffectIndex eff_idx)
     float y = (m_caster->GetPositionY() + unitTarget->GetPositionY()) * 0.5f;
     float z = m_caster->GetPositionZ();
     m_caster->UpdateAllowedPositionZ(x, y, z);
-    if (!pGameObj->Create(map->GenerateLocalLowGuid(HIGHGUID_GAMEOBJECT), gameobject_id, map, x, y, z, m_caster->GetOrientation()))
+    uint32 lowGuid = map->GenerateLocalLowGuid(HIGHGUID_GAMEOBJECT);
+    if (!pGameObj->Create(lowGuid, lowGuid, gameobject_id, map, x, y, z, m_caster->GetOrientation()))
     {
         delete pGameObj;
         return;
@@ -7570,7 +7577,7 @@ void Spell::EffectActivateObject(SpellEffectIndex effIdx)
             if (m_spellInfo->Id == 46610)
                 gameObjTarget->Use(m_caster, m_spellInfo);
             else
-                gameObjTarget->ResetDoorOrButton();
+                gameObjTarget->ResetDoorOrButton(m_caster);
             break;
         case GameObjectActions::DESPAWN:
             gameObjTarget->ForcedDespawn();
@@ -7683,7 +7690,7 @@ void Spell::EffectActivateObject(SpellEffectIndex effIdx)
             gameObjTarget->ApplyModFlag(GAMEOBJECT_FLAGS, GO_FLAG_NO_INTERACT, action == GameObjectActions::MAKE_INERT);
             break;
         case GameObjectActions::CLOSE_AND_LOCK:
-            gameObjTarget->ResetDoorOrButton();
+            gameObjTarget->ResetDoorOrButton(m_caster);
             gameObjTarget->SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_LOCKED);
             break;
         case GameObjectActions::DESTROY:
@@ -7997,7 +8004,8 @@ void Spell::EffectSummonObject(SpellEffectIndex eff_idx)
         m_caster->GetClosePoint(x, y, z, DEFAULT_WORLD_OBJECT_SIZE);
 
     Map* map = m_caster->GetMap();
-    if (!pGameObj->Create(map->GenerateLocalLowGuid(HIGHGUID_GAMEOBJECT), go_id, map,
+    uint32 lowGuid = map->GenerateLocalLowGuid(HIGHGUID_GAMEOBJECT);
+    if (!pGameObj->Create(lowGuid, lowGuid, go_id, map,
                           x, y, z, m_caster->GetOrientation(), 0.0f, 0.0f, 0.0f, 0.0f, GO_ANIMPROGRESS_DEFAULT, GO_STATE_READY))
     {
         delete pGameObj;
@@ -8649,8 +8657,8 @@ void Spell::EffectTransmitted(SpellEffectIndex eff_idx)
     }
 
     GameObject* pGameObj = new GameObject;
-
-    if (!pGameObj->Create(cMap->GenerateLocalLowGuid(HIGHGUID_GAMEOBJECT), name_id, cMap,
+    uint32 lowGuid = cMap->GenerateLocalLowGuid(HIGHGUID_GAMEOBJECT);
+    if (!pGameObj->Create(lowGuid, lowGuid, name_id, cMap,
                           fx, fy, fz, m_caster->GetOrientation()))
     {
         delete pGameObj;

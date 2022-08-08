@@ -1430,11 +1430,11 @@ void Unit::JustKilledCreature(Unit* killer, Creature* victim, Player* responsibl
     if (victim->IsLinkingEventTrigger())
         victim->GetMap()->GetCreatureLinkingHolder()->DoCreatureLinkingEvent(LINKING_EVENT_DIE, victim);
 
-    if (victim->GetCreatureGroup())
+    if (CreatureGroup* cGroup = victim->GetCreatureGroup())
     {
-        auto fData = victim->GetCreatureGroup()->GetFormationData();
-        if (fData)
+        if (FormationData* fData = cGroup->GetFormationData())
             fData->OnDeath(victim);
+        cGroup->TriggerLinkingEvent(CREATURE_GROUP_EVENT_MEMBER_DIED, victim);
     }
 
     // Dungeon specific stuff
@@ -2868,7 +2868,7 @@ MeleeHitOutcome Unit::RollMeleeOutcomeAgainst(const Unit* pVictim, WeaponAttackT
     return MELEE_HIT_NORMAL;
 }
 
-uint32 Unit::CalculateDamage(WeaponAttackType attType, bool normalized, uint8 index)
+float Unit::CalculateDamage(WeaponAttackType attType, bool normalized, uint8 index)
 {
     float min_damage, max_damage;
 
@@ -2909,7 +2909,7 @@ uint32 Unit::CalculateDamage(WeaponAttackType attType, bool normalized, uint8 in
     if (max_damage == 0.0f)
         max_damage = 5.0f;
 
-    return urand((uint32)min_damage, (uint32)max_damage);
+    return frand(min_damage, max_damage);
 }
 
 float Unit::CalculateLevelPenalty(SpellEntry const* spellProto) const
@@ -2945,7 +2945,7 @@ void Unit::SendMeleeAttackStop(Unit* victim) const
     WorldPacket data(SMSG_ATTACKSTOP, (4 + 16));            // we guess size
     data << GetPackGUID();
     data << (victim ? victim->GetPackGUID() : PackedGuid());
-    data << uint32(victim ? victim->IsDead() : false);
+    data << uint32(IsDead() ? 1 : 0);
     SendMessageToSet(data, true);
     DETAIL_FILTER_LOG(LOG_FILTER_COMBAT, "%s stopped attacking %s", GetGuidStr().c_str(), victim->GetGuidStr().c_str());
 }
@@ -4136,6 +4136,9 @@ bool Unit::RollSpellCritOutcome(Unit* caster, const Unit* victim, SpellSchoolMas
     if (!caster || !caster->CanCrit(spell, schoolMask, GetWeaponAttackType(spell)))
         return false;
 
+    if (spell->DmgClass == SPELL_DAMAGE_CLASS_MELEE && victim->IsPlayer() && !victim->IsStandState()) // autocrit on not standing for melee ability
+        return true;
+
     const float chance = caster->CalculateSpellCritChance(victim, schoolMask, spell);
     return roll_chance_combat(chance);
 }
@@ -5269,7 +5272,8 @@ bool Unit::RemoveNoStackAurasDueToAuraHolder(SpellAuraHolder* holder)
             if (!IsSpellWithCasterSourceTargetsOnly(spellProto) && !IsSpellWithCasterSourceTargetsOnly(existingSpellProto))
             {
                 // holder cannot remove higher/stronger rank if it isn't from the same caster
-                if (IsSimilarExistingAuraStronger(holder, existing))
+                // judgement excluded due to invalid comparison of dummy auras
+                if (specific != SPELL_JUDGEMENT && IsSimilarExistingAuraStronger(holder, existing)) // TROLOLO
                     return false;
 
                 if (!diminished && sSpellMgr.IsSpellAnotherRankOfSpell(spellId, existingSpellId) && sSpellMgr.IsSpellHigherRankOfSpell(existingSpellId, spellId))
@@ -6321,7 +6325,7 @@ void Unit::CasterHitTargetWithSpell(Unit* realCaster, Unit* target, SpellEntry c
 
         // we want to change the stand state of each character if possible/required
         // Since patch 1.5.0 sitting creature always stand up on attack (even if stunned)
-        if (success && !target->IsStandState() && target->IsPlayer())
+        if (success && !target->IsStandState() && !target->IsInCombat())
             target->SetStandState(UNIT_STAND_STATE_STAND);
 
         // Hostile spell hits count as attack made against target (if detected), stealth removed at Spell::cast if spell break it
@@ -7418,12 +7422,17 @@ uint32 Unit::SpellDamageBonusDone(Unit* victim, SpellSchoolMask schoolMask, Spel
     if (GetTypeId() == TYPEID_UNIT && !((Creature*)this)->IsPet())
         DoneTotalMod *= Creature::_GetSpellDamageMod(((Creature*)this)->GetCreatureInfo()->Rank);
 
+    Item* const weapon = GetTypeId() == TYPEID_PLAYER ? ((Player*)this)->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND) : nullptr;
+
     AuraList const& mModDamagePercentDone = GetAurasByType(SPELL_AURA_MOD_DAMAGE_PERCENT_DONE);
     for (auto i : mModDamagePercentDone)
     {
-        if ((i->GetModifier()->m_miscvalue & schoolMask) &&
+        // SPELL_ATTR_EX5_AURA_AFFECTS_NOT_JUST_REQ_EQUIPPED_ITEM forces SPELL_AURA_MOD_DAMAGE_PERCENT_DONE on all damage
+        if (i->GetSpellProto()->HasAttribute(SPELL_ATTR_EX5_AURA_AFFECTS_NOT_JUST_REQ_EQUIPPED_ITEM) && weapon && weapon->IsFitToSpellRequirements(i->GetSpellProto()))
+            DoneTotalMod *= (i->GetModifier()->m_amount + 100.0f) / 100.0f;
+        else if ((i->GetModifier()->m_miscvalue & GetSpellSchoolMask(spellProto)) &&
             i->GetSpellProto()->EquippedItemClass == -1 &&
-                // -1 == any item class (not wand then)
+            // -1 == any item class (not wand then)
             i->GetSpellProto()->EquippedItemInventoryTypeMask == 0)
             // 0 == any inventory type (not wand then)
         {
@@ -8727,6 +8736,12 @@ bool Unit::IsVisibleForOrDetect(Unit const* u, WorldObject const* viewPoint, boo
         // if player is dead then he can't detect anyone in any cases
         if (!u->IsAlive())
             detect = false;
+    }
+    else if (spell)
+    {
+        // all despawned creatures/players not visible for any creatures spells
+        if (u->GetDeathState() == DEAD || GetDeathState() == DEAD)
+            return false;
     }
     else
     {
@@ -11797,7 +11812,8 @@ Unit* Unit::TakePossessOf(SpellEntry const* spellEntry, SummonPropertiesEntry co
     if (x == 0.0f && y == 0.0f && z == 0.0f)
         pos = CreatureCreatePos(this, GetOrientation(), CONTACT_DISTANCE, ang);
 
-    if (!possessed->Create(GetMap()->GenerateLocalLowGuid(cinfo->GetHighGuid()), pos, cinfo))
+    uint32 lowGuid = GetMap()->GenerateLocalLowGuid(cinfo->GetHighGuid());
+    if (!possessed->Create(lowGuid, lowGuid, pos, cinfo))
     {
         delete possessed;
         return nullptr;

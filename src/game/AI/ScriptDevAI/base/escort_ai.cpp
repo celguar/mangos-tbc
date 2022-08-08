@@ -149,6 +149,8 @@ void npc_escortAI::UpdateAI(const uint32 diff)
                 {
                     if (m_creature->IsPet())
                         static_cast<Pet*>(m_creature)->Unsummon(PET_SAVE_AS_DELETED); // we assume escort AI pet to always be non-saved
+                    else if (auto group = m_creature->GetCreatureGroup())
+                        group->Despawn();
                     else
                         m_creature->ForcedDespawn();
                 }
@@ -161,8 +163,6 @@ void npc_escortAI::UpdateAI(const uint32 diff)
         else
             m_playerCheckTimer -= diff;
     }
-
-    UpdateTimers(diff, m_creature->IsInCombat());
 
     UpdateEscortAI(diff);
 }
