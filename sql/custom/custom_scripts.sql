@@ -7,8 +7,3 @@ CREATE TABLE `custom_scripts`  (
   `ScriptName` varchar(128) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT '',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = MyISAM AUTO_INCREMENT = 2 CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of custom_scripts
--- ----------------------------
-INSERT INTO `custom_scripts` VALUES (1, 'random_enchant');

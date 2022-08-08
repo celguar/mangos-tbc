@@ -433,6 +433,76 @@ void ScriptDevAIMgr::OnPlayerLogout(Player* pPlayer)
     }
 }
 
+void ScriptDevAIMgr::OnPlayerPreUpdate(Player* pPlayer, const uint32& diff)
+{
+    for (const auto& script : m_scripts)
+    {
+        const auto& script_ptr = dynamic_cast<ScriptPlayer*>(script);
+        if (script_ptr)
+            script_ptr->OnPreUpdate(pPlayer, diff);
+    }
+}
+
+void ScriptDevAIMgr::OnPlayerUpdate(Player* pPlayer, const uint32& diff)
+{
+    for (const auto& script : m_scripts)
+    {
+        const auto& script_ptr = dynamic_cast<ScriptPlayer*>(script);
+        if (script_ptr)
+            script_ptr->OnUpdate(pPlayer, diff);
+    }
+}
+
+void ScriptDevAIMgr::OnPlayerPostUpdate(Player* pPlayer, const uint32& diff)
+{
+    for (const auto& script : m_scripts)
+    {
+        const auto& script_ptr = dynamic_cast<ScriptPlayer*>(script);
+        if (script_ptr)
+            script_ptr->OnPostUpdate(pPlayer, diff);
+    }
+}
+
+void ScriptDevAIMgr::OnPlayerKillUnit(Player* pPlayer, const Unit* unit)
+{
+    for (const auto& script : m_scripts)
+    {
+        const auto& script_ptr = dynamic_cast<ScriptPlayer*>(script);
+        if (script_ptr)
+            script_ptr->OnKillUnit(pPlayer, unit);
+    }
+}
+
+void ScriptDevAIMgr::OnPlayerPvPKill(Player* pPlayer, Player* pVictim)
+{
+    for (const auto& script : m_scripts)
+    {
+        const auto& script_ptr = dynamic_cast<ScriptPlayer*>(script);
+        if (script_ptr)
+            script_ptr->OnPvPKill(pPlayer, pVictim);
+    }
+}
+
+void ScriptDevAIMgr::OnPlayerXpGain(Player* pPlayer, const uint32& xp_gain)
+{
+    for (const auto& script : m_scripts)
+    {
+        const auto& script_ptr = dynamic_cast<ScriptPlayer*>(script);
+        if (script_ptr)
+            script_ptr->OnXpGain(pPlayer, xp_gain);
+    }
+}
+
+void ScriptDevAIMgr::OnPlayerLevelUp(Player* pPlayer)
+{
+    for (const auto& script : m_scripts)
+    {
+        const auto& script_ptr = dynamic_cast<ScriptPlayer*>(script);
+        if (script_ptr)
+            script_ptr->OnLevelUp(pPlayer);
+    }
+}
+
 bool ScriptDevAIMgr::OnEffectDummy(Unit* pCaster, uint32 spellId, SpellEffectIndex effIndex, Creature* pTarget, ObjectGuid originalCasterGuid)
 {
     Script* pTempScript = GetScript(pTarget->GetScriptId());
