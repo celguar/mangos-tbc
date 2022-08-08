@@ -7,11 +7,30 @@
 
 RandomEnchant::RandomEnchant()
 	: ScriptPlayer("random_enchant")
+	, _enchants{}
+	, _chances{}
+	, _quality_min{}
+	,_quality_max{}
 {
-	_isActive = sConfig.GetBoolDefault("RandomCraft.Enabled", false);
+	_isActive = sConfig.GetBoolDefault("RandomEnchant.Enabled", false);
 
 	if (_isActive)
 	{
+		_quality_min = static_cast<ItemQualities>(sConfig.GetIntDefault("RandomEnchant.MinQuality", ItemQualities::ITEM_QUALITY_NORMAL));
+		_quality_max = static_cast<ItemQualities>(sConfig.GetIntDefault("RandomEnchant.MaxQuality", ItemQualities::ITEM_QUALITY_LEGENDARY));
+
+		const std::string& random_enchant_chances = sConfig.GetStringDefault("RandomEnchant.RandomEnchantChances", "55, 75, 90");
+		uint32 random_enchant_count = static_cast<uint32>(sConfig.GetIntDefault("RandomEnchant.RandomEnchantCount", 3));
+		if (random_enchant_count > 3) random_enchant_count = 3;
+
+		const auto str = StrSplit(random_enchant_chances, ",");
+		if (str.size() != random_enchant_count) random_enchant_count = str.size();
+
+		for (size_t i = 0; i < str.size(); ++i)
+		{
+			_chances.push_back(std::atoll(str[i].c_str()));
+		}
+
 		QueryResult* result = WorldDatabase.Query("SELECT enchantID, tier, class, exclusiveSubClass FROM item_enchantment_random_tiers");
 		{
 			do
@@ -28,7 +47,7 @@ RandomEnchant::RandomEnchant()
 		}
 
 		RegisterSelf();
-		sLog.outString("RandomEnchant loaded.");
+		sLog.outString("RandomEnchant module loaded.\nMinimum quality: {%d} Maximum quality: {%d} Chances: {%s} Maximum enchant count: {%d}.", _quality_min, _quality_max, random_enchant_chances, random_enchant_count);
 	}
 }
 
@@ -51,60 +70,46 @@ void RandomEnchant::OnLootItem(Player* pPlayer, Item* pItem, uint32 /*count*/)
 	if (!pPlayer || !pItem)
 		return;
 
+	uint32 Quality = pItem->GetProto()->Quality;
+	uint32 Class = pItem->GetProto()->Class;
+	if ((Quality > (uint32)_quality_max || Quality < (uint32)_quality_min) ||
+		(Class != ItemClass::ITEM_CLASS_WEAPON && Class != ItemClass::ITEM_CLASS_ARMOR))
+	{
+		return;
+	}
+
 	rollEnchant(pPlayer, pItem);
 }
 
 void RandomEnchant::rollEnchant(Player* player, Item* item)
 {
-	uint32 Quality = item->GetProto()->Quality;
-	uint32 Class = item->GetProto()->Class;
-
-	if (
-		(Quality > ItemQualities::ITEM_QUALITY_LEGENDARY || Quality < ItemQualities::ITEM_QUALITY_NORMAL) ||
-		(Class != ItemClass::ITEM_CLASS_WEAPON && Class != ItemClass::ITEM_CLASS_ARMOR)
-		)
-	{
-		return;
-	}
-
-	uint32 slotRand[3] = { -1, -1, -1 };
 	uint32 slotEnch[3] = { 0, 1, 5 };
 	uint32 randEnchantCount = 0;
+	uint32 cur_slot = 0;
 
-	if (rand_chance() >= 60.0)
-		slotRand[0] = getRandomEnchantment(item);
-	if (slotRand[0] != -1)
+	for (const auto& slot_chance : _chances)
 	{
-		++randEnchantCount;
-		if (rand_chance() >= 70.0)
+		if (rand_chance() >= slot_chance)
 		{
-			slotRand[1] = getRandomEnchantment(item);
-			++randEnchantCount;
-		}
-		if (slotRand[1] != -1)
-		{
-			if (rand_chance() >= 75.0)
+			const auto& enchant_result = getRandomEnchantment(item);
+			if (enchant_result != -1)
 			{
-				slotRand[2] = getRandomEnchantment(item);
-				++randEnchantCount;
+				//Make sure enchantment id exists
+				if (sSpellItemEnchantmentStore.LookupEntry(enchant_result))
+				{
+					player->ApplyEnchantment(item, EnchantmentSlot(slotEnch[cur_slot]), false);
+					item->SetEnchantment(EnchantmentSlot(slotEnch[cur_slot]), enchant_result, 0, 0);
+					player->ApplyEnchantment(item, EnchantmentSlot(slotEnch[cur_slot]), true);
+					++randEnchantCount;
+					++cur_slot;
+				}
 			}
+			else break;
 		}
 	}
-	for (int i = 0; i < 2; i++)
-	{
-		if (slotRand[i] != -1)
-		{
-			//Make sure enchantment id exists
-			if (sSpellItemEnchantmentStore.LookupEntry(slotRand[i]))
-			{
-				player->ApplyEnchantment(item, EnchantmentSlot(slotEnch[i]), false);
-				item->SetEnchantment(EnchantmentSlot(slotEnch[i]), slotRand[i], 0, 0);
-				player->ApplyEnchantment(item, EnchantmentSlot(slotEnch[i]), true);
-			}
-		}
-	}
+
 	ChatHandler chathandle = ChatHandler(player->GetSession());
-	if (slotRand[0] != -1)
+	if (randEnchantCount > 0)
 		chathandle.PSendSysMessage("Newly Acquired |cffFF0000 %s |rhas received|cffFF0000 %d |rrandom enchantment!", item->GetProto()->Name1, randEnchantCount);
 }
 

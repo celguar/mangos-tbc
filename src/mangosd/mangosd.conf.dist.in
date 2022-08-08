@@ -2107,3 +2107,35 @@ Metric.Password = ""
 
 Dummy.Debug1 = 0
 Dummy.Debug2 = 0
+
+
+###################################################################################################################
+# RANDOM ENCHANTEMENT CONFIG
+#
+#	RandomEnchant.Enabled
+#		Activate or desactive the module
+#		Default: 0 (disable)
+#
+#	RandomEnchant.MinQuality
+#		Minimum item quality to trigger the script
+#		Default: 1 (ITEM_QUALITY_NORMAL)
+#
+#	RandomEnchant.MaxQuality
+#		Maximum item quality to trigger the script
+#		Default: 5 (ITEM_QUALITY_LEGENDARY)
+#
+#	RandomEnchant.RandomEnchantCount
+#		Define the amount of random enchant an item can get
+#		Default: 3
+#
+#	RandomEnchant.RandomEnchantChances
+#		Define the chances to enchant the item
+#		Default: "55, 75, 90" (45% for 1, 25% for 2, 10% for 3)
+#
+###################################################################################################################
+
+RandomEnchant.Enabled = 0
+RandomEnchant.MinQuality = 1
+RandomEnchant.MaxQuality = 5
+RandomEnchant.RandomEnchantCount = 3
+RandomEnchant.RandomEnchantChances = "55, 75, 90"
