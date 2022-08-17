@@ -1126,6 +1126,9 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
         sTransmogrification->LoadPlayerSets(playerGUID);
 #endif
 
+    // Script handle
+    sScriptDevAIMgr.OnPlayerLogin(pCurrChar);
+
     m_playerLoading = false;
     delete holder;
 }

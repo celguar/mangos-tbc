@@ -82,8 +82,9 @@ InstanceData* GetNewInstanceScript(Map* map)
     return new T(map);
 }
 
-struct Script
+class Script
 {
+public:
     Script() :
         pGossipHello(nullptr), pGossipHelloGO(nullptr), pGossipSelect(nullptr), pGossipSelectGO(nullptr),
         pGossipSelectWithCode(nullptr), pGossipSelectGOWithCode(nullptr),
@@ -95,7 +96,7 @@ struct Script
         pEffectAuraDummy(nullptr), pTrapSearching(nullptr), GetGameObjectAI(nullptr), GetAI(nullptr), GetInstanceData(nullptr)
     {}
 
-    std::string Name;
+    
 
     bool (*pGossipHello)(Player*, Creature*);
     bool (*pGossipHelloGO)(Player*, GameObject*);
@@ -120,76 +121,103 @@ struct Script
     bool (*pEffectDummyItem)(Unit*, uint32, SpellEffectIndex, Item*, ObjectGuid);
     bool (*pEffectScriptEffectNPC)(Unit*, uint32, SpellEffectIndex, Creature*, ObjectGuid);
     bool (*pEffectAuraDummy)(const Aura*, bool);
-    std::function<bool(Unit*)>* pTrapSearching;
 
+    std::function<bool(Unit*)>* pTrapSearching;
     GameObjectAI* (*GetGameObjectAI)(GameObject*);
     UnitAI* (*GetAI)(Creature*);
     InstanceData* (*GetInstanceData)(Map*);
 
     void RegisterSelf(bool bReportError = true);
+
+    std::string_view GetName() const { return Name; }
+    std::string Name;
+
+protected:
+    virtual void do_not_edit(){}
 };
 
 class ScriptDevAIMgr
 {
-    public:
-        ScriptDevAIMgr() : m_scriptCount(0) {}
-        ~ScriptDevAIMgr();
+public:
+    ScriptDevAIMgr() : m_scriptCount(0) {}
+    ~ScriptDevAIMgr();
 
-        void Initialize();
-        void LoadScriptNames();
-        void CheckScriptNames();
-        void LoadAreaTriggerScripts();
-        void LoadEventIdScripts();
+    void Initialize();
+    void LoadScriptNames();
+    void CheckScriptNames();
+    void LoadAreaTriggerScripts();
+    void LoadEventIdScripts();
 
-        bool OnGossipHello(Player* pPlayer, Creature* pCreature);
-        bool OnGossipHello(Player* pPlayer, GameObject* pGo);
-        bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 uiSender, uint32 uiAction, const char* code);
-        bool OnGossipSelect(Player* pPlayer, GameObject* pGo, uint32 uiSender, uint32 uiAction, const char* code);
-        bool OnQuestAccept(Player* pPlayer, Creature* pCreature, Quest const* pQuest);
-        bool OnQuestAccept(Player* pPlayer, GameObject* pGo, Quest const* pQuest);
-        bool OnQuestAccept(Player* pPlayer, Item* pItem, Quest const* pQuest);
-        bool OnQuestRewarded(Player* pPlayer, Creature* pCreature, Quest const* pQuest);
-        bool OnQuestRewarded(Player* pPlayer, GameObject* pGo, Quest const* pQuest);
-        uint32 GetDialogStatus(const Player* pPlayer, const Creature* pCreature) const;
-        uint32 GetDialogStatus(const Player* pPlayer, const GameObject* pGo) const;
-        bool OnGameObjectUse(Player* pPlayer, GameObject* pGo);
-        std::function<bool(Unit*)>* OnTrapSearch(GameObject* go);
-        bool OnItemUse(Player* pPlayer, Item* pItem, SpellCastTargets const& targets);
-        bool OnItemLoot(Player* pPlayer, Item* pItem, bool apply);
-        bool OnAreaTrigger(Player* pPlayer, AreaTriggerEntry const* atEntry);
-        bool OnProcessEvent(uint32 uiEventId, Object* pSource, Object* pTarget, bool bIsStart);
-        bool OnEffectDummy(Unit* pCaster, uint32 spellId, SpellEffectIndex effIndex, Creature* pTarget, ObjectGuid originalCasterGuid);
-        bool OnEffectDummy(Unit* pCaster, uint32 spellId, SpellEffectIndex effIndex, GameObject* pTarget, ObjectGuid originalCasterGuid);
-        bool OnEffectDummy(Unit* pCaster, uint32 spellId, SpellEffectIndex effIndex, Item* pTarget, ObjectGuid originalCasterGuid);
-        bool OnEffectScriptEffect(Unit* pCaster, uint32 spellId, SpellEffectIndex effIndex, Creature* pTarget, ObjectGuid originalCasterGuid);
-        bool OnAuraDummy(Aura const* pAura, bool bApply);
+    
+    
+public: /* Backport functionnality */
+    std::function<bool(Unit*)>* OnTrapSearch(GameObject* go);
+    bool OnProcessEvent(uint32 uiEventId, Object* pSource, Object* pTarget, bool bIsStart);
+    bool OnAuraDummy(Aura const* pAura, bool bApply);
+    void AddScript(uint32 id, Script* script);
+    Script* GetScript(uint32 id) const;
+    const char* GetScriptName(uint32 id) const { return id < m_scriptNames.size() ? m_scriptNames[id].c_str() : ""; }
+    uint32 GetScriptId(const char* name) const;
+    uint32 GetScriptIdsCount() const { return m_scriptNames.size(); }
+    InstanceData* CreateInstanceData(Map* pMap);
+    uint32 GetAreaTriggerScriptId(uint32 triggerId) const;
+    uint32 GetEventIdScriptId(uint32 eventId) const;
 
-        void AddScript(uint32 id, Script* script);
-        Script* GetScript(uint32 id) const;
-        const char* GetScriptName(uint32 id) const { return id < m_scriptNames.size() ? m_scriptNames[id].c_str() : ""; }
-        uint32 GetScriptId(const char* name) const;
-        uint32 GetScriptIdsCount() const { return m_scriptNames.size(); }
+public: /* CreatureScript */
+    bool OnGossipHello(Player* player, Creature* creature);
+    bool OnGossipSelect(Player* player, Creature* creature, uint32 sender, uint32 action, const char* code);
+    bool OnQuestAccept(Player* player, Creature* creature, Quest const* quest);
+    bool OnQuestRewarded(Player* pPlayer, Creature* pCreature, Quest const* pQuest);
+    uint32 GetDialogStatus(const Player* pPlayer, const Creature* pCreature) const;
+    UnitAI* GetCreatureAI(Creature* pCreature) const;
 
-        UnitAI* GetCreatureAI(Creature* pCreature) const;
-        GameObjectAI* GetGameObjectAI(GameObject* gameobject) const;
+public: /* GameObjectScript */
+    bool OnGossipHello(Player* player, GameObject* go);
+    bool OnGossipSelect(Player* player, GameObject* go, uint32 sender, uint32 action, const char* code);
+    bool OnQuestAccept(Player* player, GameObject* go, Quest const* quest);
+    bool OnQuestRewarded(Player* pPlayer, GameObject* pGo, Quest const* pQuest);
+    uint32 GetDialogStatus(const Player* pPlayer, const GameObject* pGo) const;
+    bool OnGameObjectUse(Player* pPlayer, GameObject* pGo);
+    GameObjectAI* GetGameObjectAI(GameObject* gameobject) const;
 
-        InstanceData* CreateInstanceData(Map* pMap);
-        uint32 GetAreaTriggerScriptId(uint32 triggerId) const;
-        uint32 GetEventIdScriptId(uint32 eventId) const;
+public: /* ItemScript */
+    bool OnQuestAccept(Player* player, Item* item, Quest const* quest);
+    bool OnItemUse(Player* player, Item* item, SpellCastTargets const& targets);
+    bool OnItemLoot(Player* pPlayer, Item* pItem, bool apply);
 
-    private:
-        typedef std::vector<Script*> SDScriptVec;
-        typedef std::vector<std::string> ScriptNameMap;
-        typedef std::unordered_map<uint32, uint32> AreaTriggerScriptMap;
-        typedef std::unordered_map<uint32, uint32> EventIdScriptMap;
+public: /* PlayerScript*/
+    void OnPlayerLogin(Player* pPlayer);
+    void OnPlayerLogout(Player* pPlayer);
+    void OnPlayerPreUpdate(Player* pPlayer, const uint32& diff);
+    void OnPlayerUpdate(Player* pPlayer, const uint32& diff);
+    void OnPlayerPostUpdate(Player* pPlayer, const uint32& diff);
+    void OnPlayerKillUnit(Player* pPlayer, const Unit* unit);
+    void OnPlayerPvPKill(Player* pPlayer, Player* pVictim);
+    void OnPlayerXpGain(Player* pPlayer, const uint32& xp_gain);
+    void OnPlayerLevelUp(Player* pPlayer);
+    bool OnPlayerItemLoot(Player* pPlayer, Item* pItem);
 
-        int m_scriptCount;
-        SDScriptVec m_scripts;
+public: /* AreaTriggerScript */
+    bool OnAreaTrigger(Player* pPlayer, AreaTriggerEntry const* atEntry);
 
-        AreaTriggerScriptMap    m_AreaTriggerScripts;
-        EventIdScriptMap        m_EventIdScripts;
+public: /* SpellSC */
+    bool OnEffectDummy(Unit* pCaster, uint32 spellId, SpellEffectIndex effIndex, Creature* pTarget, ObjectGuid originalCasterGuid);
+    bool OnEffectDummy(Unit* pCaster, uint32 spellId, SpellEffectIndex effIndex, GameObject* pTarget, ObjectGuid originalCasterGuid);
+    bool OnEffectDummy(Unit* pCaster, uint32 spellId, SpellEffectIndex effIndex, Item* pTarget, ObjectGuid originalCasterGuid);
+    bool OnEffectScriptEffect(Unit* pCaster, uint32 spellId, SpellEffectIndex effIndex, Creature* pTarget, ObjectGuid originalCasterGuid);
 
-        ScriptNameMap           m_scriptNames;
+
+private:
+    typedef std::vector<Script*> SDScriptVec;
+    typedef std::vector<std::string> ScriptNameMap;
+    typedef std::unordered_map<uint32, uint32> AreaTriggerScriptMap;
+    typedef std::unordered_map<uint32, uint32> EventIdScriptMap;
+
+    int                     m_scriptCount;
+    SDScriptVec             m_scripts;
+    AreaTriggerScriptMap    m_AreaTriggerScripts;
+    EventIdScriptMap        m_EventIdScripts;
+    ScriptNameMap           m_scriptNames;
 };
 
 // *********************************************************
@@ -199,6 +227,7 @@ class ScriptDevAIMgr
 void DoScriptText(int32 iTextEntry, WorldObject* pSource, Unit* pTarget = nullptr, uint32 chatTypeOverride = 0);
 void DoBroadcastText(int32 iTextEntry, WorldObject* pSource, Unit* pTarget = nullptr, uint32 chatTypeOverride = 0);
 void DoOrSimulateScriptTextForMap(int32 iTextEntry, uint32 uiCreatureEntry, Map* pMap, Creature* pCreatureSource = nullptr, Unit* pTarget = nullptr);
+
 
 #define sScriptDevAIMgr MaNGOS::Singleton<ScriptDevAIMgr>::Instance()
 

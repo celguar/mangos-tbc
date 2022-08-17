@@ -968,8 +968,14 @@ void Map::Update(const uint32& t_diff)
             if (isInActiveArea)
                 activeChars++;
 
+            // Script handle
+            sScriptDevAIMgr.OnPlayerPreUpdate(plr, t_diff);
+
             plr->Update(t_diff);
             plr->UpdateAI(t_diff, !(isInActiveArea || updateAI || plr->IsInCombat()));
+
+            // Script handle
+            sScriptDevAIMgr.OnPlayerPostUpdate(plr, t_diff);
         }
     }
 
