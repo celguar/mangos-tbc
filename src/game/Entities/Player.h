@@ -1539,6 +1539,7 @@ class Player : public Unit
         void learnQuestRewardedSpells();
         void learnQuestRewardedSpells(Quest const* quest);
         void learnSpellHighRank(uint32 spellid);
+        void learnClassLevelSpells(bool includeHighLevelQuestRewards = false);
 
 #ifdef ENABLE_PLAYERBOTS
         void learnClassLevelSpells(bool includeHighLevelQuestRewards = false);
