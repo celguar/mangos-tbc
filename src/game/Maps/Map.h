@@ -636,6 +636,7 @@ class Map : public GridRefManager<NGridType>
         uint32 m_defaultLight;
 
         std::vector<ContinentArea> m_activeAreas;
+        std::vector<uint32> m_activeZones;
         uint32 m_activeAreasTimer;
         bool hasRealPlayers;
 };
