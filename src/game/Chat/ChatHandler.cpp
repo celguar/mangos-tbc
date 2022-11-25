@@ -318,7 +318,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
 #ifdef ENABLE_PLAYERBOTS
             if (player->GetPlayerbotAI())
             {
-                player->GetPlayerbotAI()->HandleCommand(type, msg, *GetPlayer());
+                player->GetPlayerbotAI()->HandleCommand(type, msg, *GetPlayer(), lang);
                 GetPlayer()->m_speakTime = 0;
                 GetPlayer()->m_speakCount = 0;
             }
