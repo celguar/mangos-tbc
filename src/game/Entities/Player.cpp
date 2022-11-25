@@ -1575,6 +1575,9 @@ void Player::Update(const uint32 diff)
     {
         if (diff >= m_DetectInvTimer)
         {
+#ifdef ENABLE_PLAYERBOTS
+            if (isRealPlayer())
+#endif
             HandleStealthedUnitsDetection();
             m_DetectInvTimer = GetMap()->IsBattleGroundOrArena() ? 500 : 2000;
         }
