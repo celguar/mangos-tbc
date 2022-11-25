@@ -775,6 +775,7 @@ void WorldSession::LogoutPlayer()
 
         ///- Leave all channels before player delete...
         _player->CleanupChannels();
+
         
 #ifndef ENABLE_PLAYERBOTS
         ///- If the player is in a group (or invited), remove him. If the group if then only 1 person, disband the group.
