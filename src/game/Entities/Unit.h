@@ -2527,6 +2527,12 @@ class Unit : public WorldObject
         virtual CreatureInfo const* GetMountInfo() const { return nullptr; } // TODO: Meant to be used by players during taxi
         virtual void SetMountInfo(CreatureInfo const* /*info*/) {} // does nothing for base unit
         virtual void SetModelRunSpeed(float /*runSpeed*/) {} // does nothing for base unit
+        
+        void SendThreatUpdate();
+        void SendHighestThreatUpdate(HostileReference* pHostilReference);
+        void SendThreatClear() const;
+        void SendThreatRemove(HostileReference* pHostileReference) const;
+
 
         virtual bool IsThreatUpdateSent() const { return true; }
         virtual bool IgnoreLosWhenCastingOnMe() const { return false; }
