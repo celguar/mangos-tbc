@@ -568,6 +568,8 @@ void World::LoadConfigSettings(bool reload)
 
     setConfig(CONFIG_BOOL_ALWAYS_SHOW_QUEST_GREETING, "AlwaysShowQuestGreeting", false);
     
+    setConfig(CONFIG_BOOL_HONOR_KILLS_TITLES, "Custom.HonorKillsTitles", false);
+
     setConfig(CONFIG_BOOL_COLLECTORS_EDITION, "Custom.CollectorsEdition", true);
 
     setConfig(CONFIG_BOOL_TAXI_FLIGHT_CHAT_FIX, "TaxiFlightChatFix", false);
