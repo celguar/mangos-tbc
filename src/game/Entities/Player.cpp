@@ -13544,6 +13544,7 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
     {
 #endif
     if (!handled && pQuest->GetQuestCompleteScript() != 0)
+#endif
         GetMap()->ScriptsStart(SCRIPT_TYPE_QUEST_END, pQuest->GetQuestCompleteScript(), questGiver, this, Map::SCRIPT_EXEC_PARAM_UNIQUE_BY_SOURCE);
 #ifdef ENABLE_PLAYERBOTS
     }
