@@ -797,6 +797,7 @@ class ChatHandler
         bool HandleMmap(char* args);
         bool HandleMmapTestArea(char* args);
         bool HandleMmapTestHeight(char* args);
+        bool HandleMmapDemoApp(char* args);
 
         bool HandleLinkAddCommand(char* args);
         bool HandleLinkRemoveCommand(char* args);
