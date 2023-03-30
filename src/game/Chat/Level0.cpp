@@ -30,6 +30,11 @@
 #include "revision.h"
 #include "Util/Util.h"
 
+#ifdef ENABLE_PLAYERBOTS
+#include "playerbot.h"
+#include "RandomPlayerbotMgr.h"
+#endif
+
 bool ChatHandler::HandleHelpCommand(char* args)
 {
     if (!*args)
@@ -104,6 +109,10 @@ bool ChatHandler::HandleServerInfoCommand(char* /*args*/)
     PSendSysMessage(LANG_USING_WORLD_DB, sWorld.GetDBVersion());
     PSendSysMessage(LANG_USING_EVENT_AI, sWorld.GetCreatureEventAIVersion());
     PSendSysMessage(LANG_CONNECTED_USERS, activeClientsNum, maxActiveClientsNum, queuedClientsNum, maxQueuedClientsNum);
+    #ifdef ENABLE_PLAYERBOTS
+    PSendSysMessage("Online bots: %lu (MaxRandomBots: %lu)", sRandomPlayerbotMgr.playerBots.size(), sRandomPlayerbotMgr.GetMaxAllowedBotCount());
+    #endif
+    PSendSysMessage("Current diff: %lu | Average diff: %lu | Maximum diff: %lu", sWorld.GetCurrentDiff(), sWorld.GetAverageDiff(), sWorld.GetMaxDiff());
     PSendSysMessage(LANG_UPTIME, str.c_str());
 
     return true;
