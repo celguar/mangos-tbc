@@ -514,6 +514,9 @@ Player::Player(WorldSession* session): Unit(), m_taxiTracker(*this), m_mover(thi
 
     m_usedTalentCount = 0;
 
+    m_activeSpec = 0;
+    m_specsCount = 1;
+
     m_zoneUpdateId = 0;
     m_zoneUpdateTimer = 0;
     m_positionStatusUpdateTimer = 0;
@@ -4003,10 +4006,18 @@ bool Player::resetTalents(bool no_cost)
 
         for (unsigned int j : talentInfo->RankID)
             if (j)
+            {
                 removeSpell(j, !IsPassiveSpell(j), false);
+
+                // if this talent rank can be found in the PlayerTalentMap, mark the talent as removed so it gets deleted
+                PlayerTalentMap::iterator plrTalent = m_talents[m_activeSpec].find(j);
+                if (plrTalent != m_talents[m_activeSpec].end())
+                    plrTalent->second.state = PLAYERSPELL_REMOVED;
+            }
     }
 
     UpdateFreeTalentPoints(false);
+    _SaveTalents();
 
     if (!no_cost)
     {
@@ -4147,6 +4158,12 @@ void Player::DestroyForPlayer(Player* target) const
             m_items[i]->DestroyForPlayer(target);
         }
     }
+}
+
+bool Player::HasTalent(uint32 spell, uint8 spec) const
+{
+    PlayerTalentMap::const_iterator itr = m_talents[spec].find(spell);
+    return (itr != m_talents[spec].end() && itr->second.state != PLAYERSPELL_REMOVED);
 }
 
 bool Player::HasSpell(uint32 spell) const
@@ -4429,6 +4446,8 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
             CharacterDatabase.PExecute("DELETE FROM character_skills WHERE guid = '%u'", lowguid);
             CharacterDatabase.PExecute("DELETE FROM character_spell WHERE guid = '%u'", lowguid);
             CharacterDatabase.PExecute("DELETE FROM character_spell_cooldown WHERE guid = '%u'", lowguid);
+            CharacterDatabase.PExecute("DELETE FROM character_talent WHERE guid = '%u'", lowguid);
+            CharacterDatabase.PExecute("DELETE FROM character_talent_name WHERE guid = '%u'", lowguid);
             CharacterDatabase.PExecute("DELETE FROM item_instance WHERE owner_guid = '%u'", lowguid);
             CharacterDatabase.PExecute("DELETE FROM character_social WHERE guid = '%u' OR friend='%u'", lowguid, lowguid);
             CharacterDatabase.PExecute("DELETE FROM mail WHERE receiver = '%u'", lowguid);
@@ -6217,22 +6236,49 @@ uint32 Player::GetSpellRank(SpellEntry const* spellInfo) const
         return 0;
 }
 
-void Player::SendInitialActionButtons() const
+//void Player::SendInitialActionButtons() const
+//{
+//    DETAIL_LOG("Initializing Action Buttons for '%u'", GetGUIDLow());
+//
+//    WorldPacket data(SMSG_ACTION_BUTTONS, (MAX_ACTION_BUTTONS * 4));
+//    for (uint8 button = 0; button < MAX_ACTION_BUTTONS; ++button)
+//    {
+//        ActionButtonList::const_iterator itr = m_actionButtons.find(button);
+//        if (itr != m_actionButtons.end() && itr->second.uState != ACTIONBUTTON_DELETED)
+//            data << uint32(itr->second.packedData);
+//        else
+//            data << uint32(0);
+//    }
+//
+//    GetSession()->SendPacket(data);
+//    DETAIL_LOG("Action Buttons for '%u' Initialized", GetGUIDLow());
+//}
+
+void Player::SendActionButtons(uint32 state) const
 {
-    DETAIL_LOG("Initializing Action Buttons for '%u'", GetGUIDLow());
+    /*
+    state can be 0, 1
+    0 - Clears the action bars client sided. This is sent during spec swap before unlearning and before sending the new buttons. Doesn't work in 2.4.3
+    1 - Used in any SMSG_ACTION_BUTTONS packet with button data.
+    */
 
     WorldPacket data(SMSG_ACTION_BUTTONS, (MAX_ACTION_BUTTONS * 4));
-    for (uint8 button = 0; button < MAX_ACTION_BUTTONS; ++button)
+    if (state)
     {
-        ActionButtonList::const_iterator itr = m_actionButtons.find(button);
-        if (itr != m_actionButtons.end() && itr->second.uState != ACTIONBUTTON_DELETED)
-            data << uint32(itr->second.packedData);
-        else
-            data << uint32(0);
+        for (uint8 button = 0; button < MAX_ACTION_BUTTONS; ++button)
+        {
+            ActionButtonList::const_iterator itr = m_actionButtons.find(button);
+            if (itr != m_actionButtons.end() && itr->second.uState != ACTIONBUTTON_DELETED)
+                data << uint32(itr->second.packedData);
+            else
+                data << uint32(0);
+        }
     }
+    else
+        data << uint32(0);
 
     GetSession()->SendPacket(data);
-    DETAIL_LOG("Action Buttons for '%u' Initialized", GetGUIDLow());
+    DETAIL_LOG("SMSG_ACTION_BUTTONS sent '%u' spec '%u'", GetGUIDLow(), m_activeSpec);
 }
 
 bool Player::IsActionButtonDataValid(uint8 button, uint32 action, uint8 type, Player* player)
@@ -15093,8 +15139,8 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
     //"resettalents_time, trans_x, trans_y, trans_z, trans_o, transguid, extra_flags, stable_slots, at_login, zone, online, death_expire_time, taxi_path, dungeon_difficulty,"
     // 39           40                41                42                    43          44          45              46           47              48
     //"arenaPoints, totalHonorPoints, todayHonorPoints, yesterdayHonorPoints, totalKills, todayKills, yesterdayKills, chosenTitle, watchedFaction, drunk,"
-    // 49      50      51      52      53      54      55             56              57      58           59          60               61
-    //"health, power1, power2, power3, power4, power5, exploredZones, equipmentCache, ammoId, knownTitles, actionBars, grantableLevels, fishingSteps  FROM characters WHERE guid = '%u'", GUID_LOPART(m_guid));
+    // 49      50      51      52      53      54      55             56              57      58           59          60         61          62               63
+    //"health, power1, power2, power3, power4, power5, exploredZones, equipmentCache, ammoId, knownTitles, actionBars, specCount, activeSpec, grantableLevels, fishingSteps  FROM characters WHERE guid = '%u'", GUID_LOPART(m_guid));
     auto queryResult = holder->GetResult(PLAYER_LOGIN_QUERY_LOADFROM);
 
     Object::_Create(guid.GetCounter(), guid.GetCounter(), 0, HIGHGUID_PLAYER);
@@ -15522,6 +15568,7 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
     _LoadMailedItems(holder->GetResult(PLAYER_LOGIN_QUERY_LOADMAILEDITEMS));
     UpdateNextMailTimeAndUnreads();
 
+    _LoadTalents(holder->GetResult(PLAYER_LOGIN_QUERY_LOADTALENTS));
     _LoadSpells(holder->GetResult(PLAYER_LOGIN_QUERY_LOADSPELLS));
 
     _LoadAuras(holder->GetResult(PLAYER_LOGIN_QUERY_LOADAURAS), time_diff);
@@ -15558,7 +15605,11 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
             AdjustQuestReqItemCount(quest, data.second);
     }
 
-    _LoadActions(holder->GetResult(PLAYER_LOGIN_QUERY_LOADACTIONS));
+    m_specsCount = fields[60].GetUInt32();
+    m_activeSpec = fields[61].GetUInt32();
+
+    QueryResult* actionResult = CharacterDatabase.PQuery("SELECT button, action, type FROM character_action WHERE guid = '%u' AND spec = '%u' ORDER BY button", GetGUIDLow(), m_activeSpec);
+    _LoadActions(actionResult);
 
     m_social = sSocialMgr.LoadFromDB(holder->GetResult(PLAYER_LOGIN_QUERY_LOADSOCIALLIST), GetObjectGuid());
 
@@ -15639,14 +15690,14 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
     }
 
     // RaF stuff.
-    m_grantableLevels = fields[60].GetUInt8();
+    m_grantableLevels = fields[62].GetUInt8();
     if ((GetSession()->GetRecruitingFriendId() != 0))
         SetFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_REFER_A_FRIEND);
 
     if (m_grantableLevels > 0)
         SetByteValue(PLAYER_FIELD_BYTES, PLAYER_FIELD_BYTES_OFFSET_RAF_GRANTABLE_LEVEL, 0x01);
 
-    m_fishingSteps = fields[61].GetUInt32();
+    m_fishingSteps = fields[63].GetUInt32();
 
     DEBUG_FILTER_LOG(LOG_FILTER_PLAYER_STATS, "The value of player %s after load item and aura is: ", m_name.c_str());
     outDebugStatsValues();
@@ -16376,7 +16427,22 @@ void Player::_LoadMonthlyQuestStatus(std::unique_ptr<QueryResult> queryResult)
     m_MonthlyQuestChanged = false;
 }
 
-void Player::_LoadSpells(std::unique_ptr<QueryResult> queryResult)
+void Player::_LoadTalents(std::unique_ptr<QueryResult> queryResult)
+{
+    //QueryResult *result = CharacterDatabase.PQuery("SELECT spell,spec FROM character_talents WHERE guid = '%u'",GetGUIDLow());
+
+    if (queryResult)
+    {
+        do
+        {
+            Field* fields = queryResult->Fetch();
+
+            addTalent(fields[0].GetUInt32(), fields[1].GetUInt8(), false);
+        } while (queryResult->NextRow());
+    }
+}
+
+void Player::_LoadSpells(QueryResult* result)
 {
     // QueryResult *result = CharacterDatabase.PQuery("SELECT spell,active,disabled FROM character_spell WHERE guid = '%u'",GetGUIDLow());
 
@@ -16791,7 +16857,7 @@ void Player::SaveToDB()
                               "trans_x, trans_y, trans_z, trans_o, transguid, extra_flags, stable_slots, at_login, zone, "
                               "death_expire_time, taxi_path, arenaPoints, totalHonorPoints, todayHonorPoints, yesterdayHonorPoints, totalKills, "
                               "todayKills, yesterdayKills, chosenTitle, watchedFaction, drunk, health, power1, power2, power3, "
-                              "power4, power5, exploredZones, equipmentCache, ammoId, knownTitles, actionBars, grantableLevels, fishingSteps) "
+                              "power4, power5, exploredZones, equipmentCache, ammoId, knownTitles, actionBars, specCount, activeSpec, grantableLevels, fishingSteps) "
                               "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
                               "?, ?, ?, ?, ?, ?, "
                               "?, ?, ?, "
@@ -16799,7 +16865,7 @@ void Player::SaveToDB()
                               "?, ?, ?, ?, ?, ?, ?, ?, ?, "
                               "?, ?, ?, ?, ?, ?, ?, "
                               "?, ?, ?, ?, ?, ?, ?, ?, ?, "
-                              "?, ?, ?, ?, ?, ?, ?, ?, ?) ");
+                              "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ");
 
     uberInsert.addUInt32(GetGUIDLow());
     uberInsert.addUInt32(GetSession()->GetAccountId());
@@ -16934,6 +17000,9 @@ void Player::SaveToDB()
 
     uberInsert.addUInt32(uint32(GetByteValue(PLAYER_FIELD_BYTES, 2)));
 
+    uberInsert.addUInt32(uint32(m_specsCount));
+    uberInsert.addUInt32(uint32(m_activeSpec));
+
     uberInsert.addUInt32(uint32(m_grantableLevels));
 
     uberInsert.addUInt8(m_fishingSteps);
@@ -16949,6 +17018,8 @@ void Player::SaveToDB()
     _SaveDailyQuestStatus();
     _SaveWeeklyQuestStatus();
     _SaveMonthlyQuestStatus();
+    _SaveTalents();
+    _SaveTalentSpecNames();
     _SaveSpells();
     _SaveSpellCooldowns();
     _SaveActions();
@@ -17089,8 +17160,9 @@ void Player::_SaveActions()
         {
             case ACTIONBUTTON_NEW:
             {
-                SqlStatement stmt = CharacterDatabase.CreateStatement(insertAction, "INSERT INTO character_action (guid,button,action,type) VALUES (?, ?, ?, ?)");
+                SqlStatement stmt = CharacterDatabase.CreateStatement(insertAction, "INSERT INTO character_action (guid,spec,button,action,type) VALUES (?, ?, ?, ?, ?)");
                 stmt.addUInt32(GetGUIDLow());
+                stmt.addUInt32(uint32(m_activeSpec));
                 stmt.addUInt32(uint32(itr->first));
                 stmt.addUInt32(itr->second.GetAction());
                 stmt.addUInt32(uint32(itr->second.GetType()));
@@ -17101,10 +17173,11 @@ void Player::_SaveActions()
             break;
             case ACTIONBUTTON_CHANGED:
             {
-                SqlStatement stmt = CharacterDatabase.CreateStatement(updateAction, "UPDATE character_action  SET action = ?, type = ? WHERE guid = ? AND button = ?");
+                SqlStatement stmt = CharacterDatabase.CreateStatement(updateAction, "UPDATE character_action  SET action = ?, type = ? WHERE guid = ? AND spec = ? AND button = ?");
                 stmt.addUInt32(itr->second.GetAction());
                 stmt.addUInt32(uint32(itr->second.GetType()));
                 stmt.addUInt32(GetGUIDLow());
+                stmt.addUInt32(uint32(m_activeSpec));
                 stmt.addUInt32(uint32(itr->first));
                 stmt.Execute();
                 itr->second.uState = ACTIONBUTTON_UNCHANGED;
@@ -17113,8 +17186,9 @@ void Player::_SaveActions()
             break;
             case ACTIONBUTTON_DELETED:
             {
-                SqlStatement stmt = CharacterDatabase.CreateStatement(deleteAction, "DELETE FROM character_action WHERE guid = ? AND button = ?");
+                SqlStatement stmt = CharacterDatabase.CreateStatement(deleteAction, "DELETE FROM character_action WHERE guid = ? AND spec = ? AND button = ?");
                 stmt.addUInt32(GetGUIDLow());
+                stmt.addUInt32(uint32(m_activeSpec));
                 stmt.addUInt32(uint32(itr->first));
                 stmt.Execute();
                 m_actionButtons.erase(itr++);
@@ -17524,6 +17598,50 @@ void Player::_SaveSkills()
         itr->second.uState = SKILL_UNCHANGED;
 
         ++itr;
+    }
+}
+
+void Player::_SaveTalents()
+{
+    static SqlStatementID delTalents;
+    static SqlStatementID insTalents;
+
+    SqlStatement stmtDel = CharacterDatabase.CreateStatement(delTalents, "DELETE FROM character_talent WHERE guid = ? and spell = ? and spec = ?");
+    SqlStatement stmtIns = CharacterDatabase.CreateStatement(insTalents, "INSERT INTO character_talent (guid,spell,spec) VALUES (?, ?, ?)");
+
+    for (uint8 i = 0; i < MAX_TALENT_SPECS; ++i)
+    {
+        for (PlayerTalentMap::iterator itr = m_talents[i].begin(); itr != m_talents[i].end();)
+        {
+            PlayerTalent& playerTalent = itr->second;
+
+            if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.state == PLAYERSPELL_CHANGED)
+                stmtDel.PExecute(GetGUIDLow(), itr->first, itr->second.spec);
+            if (itr->second.state == PLAYERSPELL_NEW || itr->second.state == PLAYERSPELL_CHANGED)
+                stmtIns.PExecute(GetGUIDLow(), itr->first, itr->second.spec);
+
+            if (itr->second.state == PLAYERSPELL_REMOVED)
+            {
+                m_talents[i].erase(itr++);
+            }
+            else
+            {
+                itr->second.state = PLAYERSPELL_UNCHANGED;
+                ++itr;
+            }
+        }
+    }
+}
+
+void Player::_SaveTalentSpecNames()
+{
+    for (uint8 i = 0; i < MAX_TALENT_SPECS; i++)
+    {
+        if (specNames[i] != "")
+        {
+            CharacterDatabase.PExecute("DELETE FROM character_talent_name WHERE guid='%u' AND spec='%u'", GetGUIDLow(), i);
+            CharacterDatabase.PExecute("INSERT INTO character_talent_name (guid,spec,name) VALUES ('%u', '%u', '%s')", GetGUIDLow(), i, specNames[i].c_str());
+        }
     }
 }
 
@@ -21798,6 +21916,7 @@ void Player::LearnTalent(uint32 talentId, uint32 talentRank)
 
     // learn! (other talent ranks will unlearned at learning)
     learnSpell(spellid, false, true);
+    addTalent(spellid, GetActiveSpec(), true);
     DETAIL_LOG("TalentID: %u Rank: %u Spell: %u\n", talentId, talentRank, spellid);
 }
 
