@@ -15627,8 +15627,7 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
     m_specsCount = fields[60].GetUInt32();
     m_activeSpec = fields[61].GetUInt32();
 
-    QueryResult* actionResult = CharacterDatabase.PQuery("SELECT button, action, type FROM character_action WHERE guid = '%u' AND spec = '%u' ORDER BY button", GetGUIDLow(), m_activeSpec);
-    _LoadActions(actionResult);
+    _LoadActions(holder->GetResult(PLAYER_LOGIN_QUERY_LOADACTIONS));
 
     m_social = sSocialMgr.LoadFromDB(holder->GetResult(PLAYER_LOGIN_QUERY_LOADSOCIALLIST), GetObjectGuid());
 
@@ -15804,6 +15803,10 @@ void Player::_LoadActions(std::unique_ptr<QueryResult> queryResult)
             uint8 button = fields[0].GetUInt8();
             uint32 action = fields[1].GetUInt32();
             uint8 type = fields[2].GetUInt8();
+            uint32 spec = fields[3].GetUInt32();
+
+            if (spec != m_activeSpec)
+                continue;
 
             if (ActionButton* ab = addActionButton(button, action, type))
                 ab->uState = ACTIONBUTTON_UNCHANGED;
@@ -16461,7 +16464,7 @@ void Player::_LoadTalents(std::unique_ptr<QueryResult> queryResult)
     }
 }
 
-void Player::_LoadSpells(QueryResult* result)
+void Player::_LoadSpells(std::unique_ptr<QueryResult> queryResult)
 {
     // QueryResult *result = CharacterDatabase.PQuery("SELECT spell,active,disabled FROM character_spell WHERE guid = '%u'",GetGUIDLow());
 
