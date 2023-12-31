@@ -93,6 +93,10 @@ bool GameObjectModel::initialize(const GameObject* const pGo, const GameObjectDi
     if (!iModel)
         return false;
 
+    if (it->second.name.find(".m2") !
+= std::string::npos)
+        iModel->setModelFlags(VMAP::MOD_M2);
+
     name = it->second.name;
     iPos = Vector3(pGo->GetPositionX(), pGo->GetPositionY(), pGo->GetPositionZ());
     collision_enabled = true;
@@ -167,10 +171,6 @@ bool GameObjectModel::Relocate(GameObject const& go)
 {
     if (!iModel)
         return false;
-
-    if (it->second.name.find(".m2") !
-= std::string::npos)
-        iModel->setModelFlags(VMAP::MOD_M2);
 
     ModelList::const_iterator it = model_list.find(go.GetDisplayId());
     if (it == model_list.end())
