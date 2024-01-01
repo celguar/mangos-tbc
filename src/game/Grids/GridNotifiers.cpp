@@ -41,10 +41,6 @@ void VisibleChangesNotifier::Visit(CameraMapType& m)
 void VisibleNotifier::Notify()
 {
     Player& player = *i_camera.GetOwner();
-#ifdef ENABLE_PLAYERBOTS
-    if (!player.isRealPlayer())
-        return;
-#endif
     // at this moment i_clientGUIDs have guids that not iterate at grid level checks
     // but exist one case when this possible and object not out of range: transports
     if (GenericTransport* transport = player.GetTransport())
@@ -160,15 +156,6 @@ void ObjectMessageDeliverer::Visit(CameraMapType& m)
     {
         if (WorldSession* session = iter.getSource()->GetOwner()->GetSession())
             session->SendPacket(i_message);
-    }
-}
-
-void ObjectThreatMessageDeliverer::Visit(CameraMapType& m)
-{
-    for (auto& iter : m)
-    {
-        if (Player* player = iter.getSource()->GetOwner())
-            player->SendThreatMessageToPlayer(i_message);
     }
 }
 

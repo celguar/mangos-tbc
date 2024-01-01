@@ -21,7 +21,6 @@
 #include "Server/Opcodes.h"
 #include "Server/WorldPacket.h"
 #include "Server/WorldSession.h"
-#include "Util/Util.h"
 #include "World/World.h"
 #include "Globals/ObjectMgr.h"
 #include "Entities/ObjectGuid.h"
@@ -51,16 +50,9 @@
 #include "Tools/Formulas.h"
 #include "Entities/Transports.h"
 #include "Anticheat/Anticheat.hpp"
-#include <iomanip>
-#include <sstream>
 
 #ifdef BUILD_METRICS
  #include "Metric/Metric.h"
-#endif
-
-#ifdef ENABLE_PLAYERBOTS
-#include "playerbot.h"
-#include "GuildTaskMgr.h"
 #endif
 
 #include <math.h>
@@ -399,8 +391,9 @@ Unit::Unit() :
         m_createResistance = 0;
 
     m_attacking = nullptr;
-    m_modMeleeHitChance = 0.0f;
-    m_modRangedHitChance = 0.0f;
+    m_modWeaponHitChance[BASE_ATTACK] = 0.0f;
+    m_modWeaponHitChance[OFF_ATTACK] = 0.0f;
+    m_modWeaponHitChance[RANGED_ATTACK] = 0.0f;
     m_modSpellHitChance = 0.0f;
     for (float& i : m_modSpellCritChance)
         i = 0.0f;
@@ -514,9 +507,6 @@ void Unit::Update(const uint32 diff)
         else
             m_lastManaUseTimer -= diff;
     }
-
-    if (CanHaveThreatList())
-        getThreatManager().UpdateForClient(diff);
 
     if (uint32 base_att = getAttackTimer(BASE_ATTACK))
         setAttackTimer(BASE_ATTACK, (diff >= base_att ? 0 : base_att - diff));
@@ -1428,12 +1418,6 @@ void Unit::JustKilledCreature(Unit* killer, Creature* victim, Player* responsibl
         if (BattleGround* bg = responsiblePlayer->GetBattleGround())
             bg->HandleKillUnit(victim, responsiblePlayer);
 
-#ifdef ENABLE_PLAYERBOTS
-    // Guild Task check
-    if (responsiblePlayer && sPlayerbotAIConfig.guildTaskEnabled)
-        sGuildTaskMgr.CheckKillTask(responsiblePlayer, victim);
-#endif
-
     // Notify the outdoor pvp script
     if (OutdoorPvP* outdoorPvP = sOutdoorPvPMgr.GetScript(responsiblePlayer ? responsiblePlayer->GetCachedZoneId() : victim->GetZoneId()))
         outdoorPvP->HandleCreatureDeath(victim);
@@ -1461,11 +1445,6 @@ void Unit::JustKilledCreature(Unit* killer, Creature* victim, Player* responsibl
             if (map->IsRaidOrHeroicDungeon() && victim->GetCreatureInfo()->ExtraFlags & CREATURE_EXTRA_FLAG_INSTANCE_BIND)
             {
                 static_cast<DungeonMap*>(map)->PermBindAllPlayers(creditedPlayer);
-
-                /* World of Warcraft Armory */
-                if (creditedPlayer)
-                    creditedPlayer->CreateWowarmoryFeed(3, victim->GetCreatureInfo()->Entry, 0, 0);
-                /* World of Warcraft Armory */
             }
             static_cast<DungeonMap*>(map)->GetPersistanceState()->UpdateEncounterState(ENCOUNTER_CREDIT_KILL_CREATURE, victim->GetEntry());
         }
@@ -3798,9 +3777,7 @@ uint32 Unit::CalculateCritAmount(CalcDamageInfo* meleeInfo) const
 
 float Unit::GetHitChance(WeaponAttackType attackType) const
 {
-    if (attackType == RANGED_ATTACK)
-        return m_modRangedHitChance;
-    return m_modMeleeHitChance;
+    return m_modWeaponHitChance[attackType];
 }
 
 float Unit::GetHitChance(SpellSchoolMask schoolMask) const
@@ -7498,9 +7475,6 @@ int32 Unit::SpellBaseDamageBonusDone(SpellSchoolMask schoolMask)
 
     if (GetTypeId() == TYPEID_PLAYER)
     {
-        // Base value
-        DoneAdvertisedBenefit += ((Player*)this)->GetBaseSpellPowerBonus();
-
         // Damage bonus from stats
         AuraList const& mDamageDoneOfStatPercent = GetAurasByType(SPELL_AURA_MOD_SPELL_DAMAGE_OF_STAT_PERCENT);
         for (auto i : mDamageDoneOfStatPercent)
@@ -7652,9 +7626,6 @@ int32 Unit::SpellBaseHealingBonusDone(SpellSchoolMask schoolMask)
     // Healing bonus of spirit, intellect and strength
     if (GetTypeId() == TYPEID_PLAYER)
     {
-        // Base value
-        AdvertisedBenefit += ((Player*)this)->GetBaseSpellPowerBonus();
-
         // Healing bonus from stats
         AuraList const& mHealingDoneOfStatPercent = GetAurasByType(SPELL_AURA_MOD_SPELL_HEALING_OF_STAT_PERCENT);
         for (auto i : mHealingDoneOfStatPercent)
@@ -9013,9 +8984,6 @@ void Unit::AddThreat(Unit* pVictim, float threat /*= 0.0f*/, bool crit /*= false
 
 void Unit::DeleteThreatList()
 {
-    if (CanHaveThreatList(true) && !getThreatManager().isThreatListEmpty())
-        SendThreatClear();
-
     getThreatManager().clearReferences();
     getHostileRefManager().deleteReferences();
 }
@@ -11238,120 +11206,6 @@ uint32 Unit::GetCombatRatingDamageReduction(CombatRating cr, float rate, float c
     if (percent > cap)
         percent = cap;
     return uint32(percent * damage / 100.0f);
-}
-
-void Unit::SendThreatUpdate()
-{
-    ThreatList const& tlist = getThreatManager().getThreatList();
-    if (uint32 count = tlist.size())
-    {
-        DEBUG_FILTER_LOG(LOG_FILTER_COMBAT, "WORLD: Send SMSG_THREAT_UPDATE Message");
-        uint32 number = urand(0, -1);
-        std::stringstream data;
-        data << number << ": " << "SMSG_THREAT_UPDATE";
-        SendMessageToSet(data.str(), false);
-        data.clear();
-        data.str(std::string());
-        data << number << ": " << std::uppercase << "0x" << std::setfill('0') << std::setw(16) << std::hex << GetObjectGuid() << std::dec;
-        SendMessageToSet(data.str(), false);
-        data.clear();
-        data.str(std::string());
-        data << number << ": " << uint32(count);
-        SendMessageToSet(data.str(), false);
-        data.clear();
-        data.str(std::string());
-        for (auto itr : tlist)
-        {
-            data << number << ": " << std::uppercase << "0x" << std::setfill('0') << std::setw(16) << std::hex << itr->getUnitGuid() << std::dec;
-            SendMessageToSet(data.str(), false);
-            data.clear();
-            data.str(std::string());
-            data << number << ": " << uint32(itr->getThreat());
-            SendMessageToSet(data.str(), false);
-            data.clear();
-            data.str(std::string());
-        }
-        data << number << ": END";
-        SendMessageToSet(data.str(), false);
-    }
-}
-
-void Unit::SendHighestThreatUpdate(HostileReference* pHostilReference)
-{
-    ThreatList const& tlist = getThreatManager().getThreatList();
-    if (uint32 count = tlist.size())
-    {
-        DEBUG_FILTER_LOG(LOG_FILTER_COMBAT, "WORLD: Send SMSG_HIGHEST_THREAT_UPDATE Message");
-        uint32 number = urand(0, -1);
-        std::stringstream data;
-        data << number << ": " << "SMSG_HIGHEST_THREAT_UPDATE";
-        SendMessageToSet(data.str(), false);
-        data.clear();
-        data.str(std::string());
-        data << number << ": " << std::uppercase << "0x" << std::setfill('0') << std::setw(16) << std::hex << GetObjectGuid() << std::dec;
-        SendMessageToSet(data.str(), false);
-        data.clear();
-        data.str(std::string());
-        data << number << ": " << std::uppercase << "0x" << std::setfill('0') << std::setw(16) << std::hex << pHostilReference->getUnitGuid() << std::dec;
-        SendMessageToSet(data.str(), false);
-        data.clear();
-        data.str(std::string());
-        data << number << ": " << uint32(count);
-        SendMessageToSet(data.str(), false);
-        data.clear();
-        data.str(std::string());
-        for (auto itr : tlist)
-        {
-            data << number << ": " << std::uppercase << "0x" << std::setfill('0') << std::setw(16) << std::hex << itr->getUnitGuid() << std::dec;
-            SendMessageToSet(data.str(), false);
-            data.clear();
-            data.str(std::string());
-            data << number << ": " << uint32(itr->getThreat());
-            SendMessageToSet(data.str(), false);
-            data.clear();
-            data.str(std::string());
-        }
-        data << number << ": END";
-        SendMessageToSet(data.str(), false);
-    }
-}
-
-void Unit::SendThreatClear() const
-{
-    DEBUG_FILTER_LOG(LOG_FILTER_COMBAT, "WORLD: Send SMSG_THREAT_CLEAR Message");
-    uint32 number = urand(0, -1);
-    std::stringstream data;
-    data << number << ": " << "SMSG_THREAT_CLEAR";
-    SendMessageToSet(data.str(), false);
-    data.clear();
-    data.str(std::string());
-    data << number << ": " << std::uppercase << "0x" << std::setfill('0') << std::setw(16) << std::hex << GetObjectGuid() << std::dec;
-    SendMessageToSet(data.str(), false);
-    data.clear();
-    data.str(std::string());
-    data << number << ": END";
-    SendMessageToSet(data.str(), false);
-}
-
-void Unit::SendThreatRemove(HostileReference* pHostileReference) const
-{
-    DEBUG_FILTER_LOG(LOG_FILTER_COMBAT, "WORLD: Send SMSG_THREAT_REMOVE Message");
-    uint32 number = urand(0, -1);
-    std::stringstream data;
-    data << number << ": " << "SMSG_THREAT_REMOVE";
-    SendMessageToSet(data.str(), false);
-    data.clear();
-    data.str(std::string());
-    data << number << ": " << std::uppercase << "0x" << std::setfill('0') << std::setw(16) << std::hex << GetObjectGuid() << std::dec;
-    SendMessageToSet(data.str(), false);
-    data.clear();
-    data.str(std::string());
-    data << number << ": " << std::uppercase << "0x" << std::setfill('0') << std::setw(16) << std::hex << pHostileReference->getUnitGuid() << std::dec;
-    SendMessageToSet(data.str(), false);
-    data.clear();
-    data.str(std::string());
-    data << number << ": END";
-    SendMessageToSet(data.str(), false);
 }
 
 struct StopAttackFactionHelper

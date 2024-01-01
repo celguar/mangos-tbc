@@ -1364,7 +1364,6 @@ class Unit : public WorldObject
         void SetMaxHealth(uint32 val);
         void SetHealthPercent(float percent);
         int32 ModifyHealth(int32 dVal);
-        void SetFullHealth() { SetHealth(GetMaxHealth()); }
         float OCTRegenHPPerSpirit() const;
         float OCTRegenMPPerSpirit() const;
 
@@ -2027,8 +2026,7 @@ class Unit : public WorldObject
                    form != FORM_SHADOW && form != FORM_STEALTH;
         }
 
-        float m_modMeleeHitChance;
-        float m_modRangedHitChance;
+        float m_modWeaponHitChance[MAX_ATTACK];
         float m_modSpellHitChance;
         float m_modSpellCritChance[MAX_SPELL_SCHOOL];
 
@@ -2487,12 +2485,6 @@ class Unit : public WorldObject
 
         virtual bool IsNoWeaponSkillGain() const { return false; }
         virtual bool IsPreventingDeath() const { return false; }
-
-        void SendThreatUpdate();
-        void SendHighestThreatUpdate(HostileReference* pHostilReference);
-        void SendThreatClear() const;
-        void SendThreatRemove(HostileReference* pHostileReference) const;
-
 
     protected:
         bool MeetsSelectAttackingRequirement(Unit* target, SpellEntry const* spellInfo, uint32 selectFlags, SelectAttackingTargetParams params, int32 unitConditionId) const;

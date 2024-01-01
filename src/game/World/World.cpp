@@ -67,7 +67,6 @@
 #include "Cinematics/CinematicMgr.h"
 #include "Maps/TransportMgr.h"
 #include "Anticheat/Anticheat.hpp"
-#include "AI/ScriptDevAI/scripts/custom/Transmogrification.h"
 
 #ifdef BUILD_AHBOT
  #include "AuctionHouseBot/AuctionHouseBot.h"
@@ -76,15 +75,6 @@
 #ifdef BUILD_METRICS
  #include "Metric/Metric.h"
 #endif
-
-#ifdef ENABLE_PLAYERBOTS
-#include "AhBot.h"
-#include "PlayerbotAIConfig.h"
-#include "RandomPlayerbotMgr.h"
-#endif
-
-#include "Metric/Metric.h"
-#include "Maps/TransportMgr.h"
 
 #include <algorithm>
 #include <mutex>
@@ -109,11 +99,6 @@ uint32 World::m_relocation_ai_notify_delay = 1000u;
 uint32 World::m_currentMSTime = 0;
 TimePoint World::m_currentTime = TimePoint();
 uint32 World::m_currentDiff = 0;
-uint32 World::m_currentDiffSum = 0;
-uint32 World::m_currentDiffSumIndex = 0;
-uint32 World::m_averageDiff = 0;
-uint32 World::m_maxDiff = 0;
-list<uint32> World::m_histDiff;
 
 /// World constructor
 World::World() : mail_timer(0), mail_timer_expires(0), m_NextDailyQuestReset(0), m_NextWeeklyQuestReset(0), m_NextMonthlyQuestReset(0), m_opcodeCounters(NUM_MSG_TYPES)
@@ -126,7 +111,6 @@ World::World() : mail_timer(0), mail_timer_expires(0), m_NextDailyQuestReset(0),
     m_startTime = m_gameTime;
     m_maxActiveSessionCount = 0;
     m_maxQueuedSessionCount = 0;
-    m_maxDiff = 0;
 
     m_defaultDbcLocale = DEFAULT_LOCALE;
     m_availableDbcLocaleMask = 0;
@@ -166,9 +150,6 @@ World::~World()
 /// Cleanups before world stop
 void World::CleanupsBeforeStop()
 {
-#ifdef ENABLE_PLAYERBOTS
-    sRandomPlayerbotMgr.LogoutAllBots();
-#endif
     KickAll(true);                                   // save and kick all players
     UpdateSessions(1);                               // real players unload required UpdateSessions call
     sBattleGroundMgr.DeleteAllBattleGrounds();       // unload battleground templates before different singletons destroyed
@@ -553,15 +534,9 @@ void World::LoadConfigSettings(bool reload)
 
     setConfigMinMax(CONFIG_UINT32_START_ARENA_POINTS, "StartArenaPoints", 0, 0, getConfig(CONFIG_UINT32_MAX_ARENA_POINTS));
 
-    setConfig(CONFIG_BOOL_HONOR_KILLS_TITLES, "Custom.HonorKillsTitles", false);
-
-    setConfig(CONFIG_BOOL_COLLECTORS_EDITION, "Custom.CollectorsEdition", true);
-
     setConfig(CONFIG_BOOL_TAXI_FLIGHT_CHAT_FIX, "TaxiFlightChatFix", false);
     setConfig(CONFIG_BOOL_LONG_TAXI_PATHS_PERSISTENCE, "LongFlightPathsPersistence", false);
     setConfig(CONFIG_BOOL_ALL_TAXI_PATHS, "AllFlightPaths", false);
-    setConfig(CONFIG_BOOL_INSTANT_TAXI, "InstantFlightPaths", false);
-    setConfig(CONFIG_BOOL_FAR_VISIBLE_TAXI, "TaxiFlightFarVisibility", false);
 
     setConfig(CONFIG_BOOL_INSTANCE_IGNORE_LEVEL, "Instance.IgnoreLevel", false);
     setConfig(CONFIG_BOOL_INSTANCE_IGNORE_RAID,  "Instance.IgnoreRaid", false);
@@ -861,155 +836,6 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_FLOAT_MAX_RECRUIT_A_FRIEND_DISTANCE, "Raf.Distance", 100.f);
 
     setConfig(CONFIG_UINT32_SUNSREACH_COUNTER, "Sunsreach.CounterMax", 10000);
-
-    // Start Solocraft Config
-    setConfig(CONFIG_BOOL_SOLOCRAFT_ENABLED, "Solocraft.Enable", true);
-    setConfig(CONFIG_BOOL_SOLOCRAFT_ANNOUNCE, "Solocraft.Announce", true);
-
-    //Balancing
-    setConfig(CONFIG_BOOL_SOLOCRAFT_DEBUFF_ENABLE, "SoloCraft.Debuff.Enable", 1);
-    setConfig(CONFIG_FLOAT_SOLOCRAFT_SPELLPOWER_MULT, "SoloCraft.Spellpower.Mult", 2.5);
-    setConfig(CONFIG_FLOAT_SOLOCRAFT_STATS_MULT, "SoloCraft.Stats.Mult", 100.0);
-    //Level Thresholds
-    setConfig(CONFIG_UINT32_SOLOCRAFT_MAX_LEVEL_DIFF, "Solocraft.Max.Level.Diff", 10);
-    //Dungeon Values
-    //Default
-    setConfig(CONFIG_UINT32_DUNGEON_LEVEL, "Solocraft.Dungeon.Level", 80);
-    //Classic Instances
-    setConfig(CONFIG_UINT32_SHADOWFANGKEEP_LEVEL, "Solocraft.ShadowfangKeep.Level", 15);
-    setConfig(CONFIG_UINT32_STOCKADES_LEVEL, "Solocraft.Stockades.Level", 22);
-    setConfig(CONFIG_UINT32_DEADMINES_LEVEL, "Solocraft.Deadmines.Level", 18);
-    setConfig(CONFIG_UINT32_WAILINGCAVERNS_LEVEL, "Solocraft.WailingCaverns.Level", 17);
-    setConfig(CONFIG_UINT32_RAZORFENKRAULINSTANCE_LEVEL, "Solocraft.RazorfenKraulInstance.Level", 30);
-    setConfig(CONFIG_UINT32_BLACKFATHOM_LEVEL, "Solocraft.Blackfathom.Level", 20);
-    setConfig(CONFIG_UINT32_ULDAMAN_LEVEL, "Solocraft.Uldaman.Level", 40);
-    setConfig(CONFIG_UINT32_GNOMERAGONINSTANCE_LEVEL, "Solocraft.GnomeragonInstance.Level", 24);
-    setConfig(CONFIG_UINT32_SUNKENTEMPLE_LEVEL, "Solocraft.SunkenTemple.Level", 50);
-    setConfig(CONFIG_UINT32_RAZORFENDOWNS_LEVEL, "Solocraft.RazorfenDowns.Level", 40);
-    setConfig(CONFIG_UINT32_MONASTERYINSTANCES_LEVEL, "Solocraft.MonasteryInstances.Level", 35);
-    setConfig(CONFIG_UINT32_TANARISINSTANCE_LEVEL, "Solocraft.TanarisInstance.Level", 44);
-    setConfig(CONFIG_UINT32_BLACKROCKSPIRE_LEVEL, "Solocraft.BlackRockSpire.Level", 55);
-    setConfig(CONFIG_UINT32_BLACKROCKDEPTHS_LEVEL, "Solocraft.BlackrockDepths.Level", 50);
-    setConfig(CONFIG_UINT32_ONYXIALAIRINSTANCE_LEVEL, "Solocraft.OnyxiaLairInstance.Level", 60);
-    setConfig(CONFIG_UINT32_SCHOOLOFNECROMANCY_LEVEL, "Solocraft.SchoolofNecromancy.Level", 55);
-    setConfig(CONFIG_UINT32_ZULGURUB_LEVEL, "Solocraft.Zul'gurub.Level", 60);
-    setConfig(CONFIG_UINT32_STRATHOLME_LEVEL, "Solocraft.Stratholme.Level", 55);
-    setConfig(CONFIG_UINT32_MAURADON_LEVEL, "Solocraft.Mauradon.Level", 48);
-    setConfig(CONFIG_UINT32_ORGRIMMARINSTANCE_LEVEL, "Solocraft.OrgrimmarInstance.Level", 15);
-    setConfig(CONFIG_UINT32_MOLTENCORE_LEVEL, "Solocraft.MoltenCore.Level", 60);
-    setConfig(CONFIG_UINT32_DIREMAUL_LEVEL, "Solocraft.DireMaul.Level", 48);
-    setConfig(CONFIG_UINT32_BLACKWINGLAIR_LEVEL, "Solocraft.BlackwingLair.Level", 40);
-    setConfig(CONFIG_UINT32_AHNQIRAJ_LEVEL, "Solocraft.AhnQiraj.Level", 60);
-    setConfig(CONFIG_UINT32_AHNQIRAJTEMPLE_LEVEL, "Solocraft.AhnQirajTemple.Level", 60);
-    //TBC Instances
-    setConfig(CONFIG_UINT32_CAVERNSOFTIME_LEVEL, "Solocraft.CavernsOfTime.Level", 68);
-    setConfig(CONFIG_UINT32_KARAZAHN_LEVEL, "Solocraft.Karazahn.Level", 68);
-    setConfig(CONFIG_UINT32_HYJALPAST_LEVEL, "Solocraft.HyjalPast.Level", 70);
-    setConfig(CONFIG_UINT32_HELLFIREMILITARY_LEVEL, "Solocraft.HellfireMilitary.Level", 68);
-    setConfig(CONFIG_UINT32_HELLFIREDEMON_LEVEL, "Solocraft.HellfireDemon.Level", 68);
-    setConfig(CONFIG_UINT32_HELLFIRERAMPART_LEVEL, "Solocraft.HellfireRampart.Level", 68);
-    setConfig(CONFIG_UINT32_HELLFIRERAID_LEVEL, "Solocraft.HellfireRaid.Level", 68);
-    setConfig(CONFIG_UINT32_COILFANGPUMPING_LEVEL, "Solocraft.CoilfangPumping.Level", 68);
-    setConfig(CONFIG_UINT32_COILFANGMARSH_LEVEL, "Solocraft.CoilfangMarsh.Level", 68);
-    setConfig(CONFIG_UINT32_COILFANGDRAENEI_LEVEL, "Solocraft.CoilfangDraenei.Level", 68);
-    setConfig(CONFIG_UINT32_COILFANGRAID_LEVEL, "Solocraft.CoilfangRaid.Level", 70);
-    setConfig(CONFIG_UINT32_TEMPESTKEEPRAID_LEVEL, "Solocraft.TempestKeepRaid.Level", 70);
-    setConfig(CONFIG_UINT32_TEMPESTKEEPARCANE_LEVEL, "Solocraft.TempestKeepArcane.Level", 68);
-    setConfig(CONFIG_UINT32_TEMPESTKEEPATRIUM_LEVEL, "Solocraft.TempestKeepAtrium.Level", 68);
-    setConfig(CONFIG_UINT32_TEMPESTKEEPFACTORY_LEVEL, "Solocraft.TempestKeepFactory.Level", 68);
-    setConfig(CONFIG_UINT32_AUCHINDOUNSHADOW_LEVEL, "Solocraft.AuchindounShadow.Level", 68);
-    setConfig(CONFIG_UINT32_AUCHINDOUNDEMON_LEVEL, "Solocraft.AuchindounDemon.Level", 68);
-    setConfig(CONFIG_UINT32_AUCHINDOUNETHEREAL_LEVEL, "Solocraft.AuchindounEthereal.Level", 68);
-    setConfig(CONFIG_UINT32_AUCHINDOUNDRAENEI_LEVEL, "Solocraft.AuchindounDraenei.Level", 68);
-    setConfig(CONFIG_UINT32_HILLSBRADPAST_LEVEL, "Solocraft.HillsbradPast.Level", 68);
-    setConfig(CONFIG_UINT32_BLACKTEMPLE_LEVEL, "Solocraft.BlackTemple.Level", 70);
-    setConfig(CONFIG_UINT32_GRUULSLAIR_LEVEL, "Solocraft.GruulsLair.Level", 70);
-    setConfig(CONFIG_UINT32_ZULAMAN_LEVEL, "Solocraft.ZulAman.Level", 68);
-    setConfig(CONFIG_UINT32_SUNWELLPLATEAU_LEVEL, "Solocraft.SunwellPlateau.Level", 70);
-    setConfig(CONFIG_UINT32_SUNWELL5MANFIX_LEVEL, "Solocraft.Sunwell5ManFix.Level", 68);
-
-    //Dungeon Difficulty
-    //Catch alls
-    setConfig(CONFIG_FLOAT_DUNGEON_DIFF, "Solocraft.Dungeon", 5.0);
-    setConfig(CONFIG_FLOAT_HEROIC_DIFF, "Solocraft.Heroic", 10.0);
-    setConfig(CONFIG_FLOAT_RAID25_DIFF, "Solocraft.Raid25", 25.0);
-    setConfig(CONFIG_FLOAT_RAID40_DIFF, "Solocraft.Raid40", 40.0);
-    //Classic Instances
-    setConfig(CONFIG_FLOAT_SHADOWFANGKEEP_DIFF, "Solocraft.ShadowfangKeep", 5.0);
-    setConfig(CONFIG_FLOAT_STOCKADES_DIFF, "Solocraft.Stockades", 5.0);
-    setConfig(CONFIG_FLOAT_DEADMINES_DIFF, "Solocraft.Deadmines", 5.0);
-    setConfig(CONFIG_FLOAT_WAILINGCAVERNS_DIFF, "Solocraft.WailingCaverns", 5.0);
-    setConfig(CONFIG_FLOAT_RAZORFENKRAULINSTANCE_DIFF, "Solocraft.RazorfenKraulInstance", 5.0);
-    setConfig(CONFIG_FLOAT_BLACKFATHOM_DIFF, "Solocraft.Blackfathom", 5.0);
-    setConfig(CONFIG_FLOAT_ULDAMAN_DIFF, "Solocraft.Uldaman", 5.0);
-    setConfig(CONFIG_FLOAT_GNOMERAGONINSTANCE_DIFF, "Solocraft.GnomeragonInstance", 5.0);
-    setConfig(CONFIG_FLOAT_SUNKENTEMPLE_DIFF, "Solocraft.SunkenTemple", 5.0);
-    setConfig(CONFIG_FLOAT_RAZORFENDOWNS_DIFF, "Solocraft.RazorfenDowns", 5.0);
-    setConfig(CONFIG_FLOAT_MONASTERYINSTANCES_DIFF, "Solocraft.MonasteryInstances", 5.0);
-    setConfig(CONFIG_FLOAT_TANARISINSTANCE_DIFF, "Solocraft.TanarisInstance", 5.0);
-    setConfig(CONFIG_FLOAT_BLACKROCKSPIRE_DIFF, "Solocraft.BlackRockSpire", 10.0);
-    setConfig(CONFIG_FLOAT_BLACKROCKDEPTHS_DIFF, "Solocraft.BlackrockDepths", 5.0);
-    setConfig(CONFIG_FLOAT_ONYXIALAIRINSTANCE_DIFF, "Solocraft.OnyxiaLairInstance", 40.0);
-    setConfig(CONFIG_FLOAT_SCHOOLOFNECROMANCY_DIFF, "Solocraft.SchoolofNecromancy", 5.0);
-    setConfig(CONFIG_FLOAT_ZULGURUB_DIFF, "Solocraft.Zul'gurub", 20.0);
-    setConfig(CONFIG_FLOAT_STRATHOLME_DIFF, "Solocraft.Stratholme", 5.0);
-    setConfig(CONFIG_FLOAT_MAURADON_DIFF, "Solocraft.Mauradon", 5.0);
-    setConfig(CONFIG_FLOAT_ORGRIMMARINSTANCE_DIFF, "Solocraft.OrgrimmarInstance", 5.0);
-    setConfig(CONFIG_FLOAT_MOLTENCORE_DIFF, "Solocraft.MoltenCore", 40.0);
-    setConfig(CONFIG_FLOAT_DIREMAUL_DIFF, "Solocraft.DireMaul", 5.0);
-    setConfig(CONFIG_FLOAT_BLACKWINGLAIR_DIFF, "Solocraft.BlackwingLair", 40.0);
-    setConfig(CONFIG_FLOAT_AHNQIRAJ_DIFF, "Solocraft.AhnQiraj", 20.0);
-    setConfig(CONFIG_FLOAT_AHNQIRAJTEMPLE_DIFF, "Solocraft.AhnQirajTemple", 40.0);
-    //TBC Instances
-    setConfig(CONFIG_FLOAT_CAVERNSOFTIME_DIFF, "Solocraft.CavernsOfTime", 5.0);
-    setConfig(CONFIG_FLOAT_KARAZAHN_DIFF, "Solocraft.Karazahn", 10.0);
-    setConfig(CONFIG_FLOAT_HYJALPAST_DIFF, "Solocraft.HyjalPast", 25.0);
-    setConfig(CONFIG_FLOAT_HELLFIREMILITARY_DIFF, "Solocraft.HellfireMilitary", 5.0);
-    setConfig(CONFIG_FLOAT_HELLFIREDEMON_DIFF, "Solocraft.HellfireDemon", 5.0);
-    setConfig(CONFIG_FLOAT_HELLFIRERAMPART_DIFF, "Solocraft.HellfireRampart", 5.0);
-    setConfig(CONFIG_FLOAT_HELLFIRERAID_DIFF, "Solocraft.HellfireRaid", 25.0);
-    setConfig(CONFIG_FLOAT_COILFANGPUMPING_DIFF, "Solocraft.CoilfangPumping", 5.0);
-    setConfig(CONFIG_FLOAT_COILFANGMARSH_DIFF, "Solocraft.CoilfangMarsh", 5.0);
-    setConfig(CONFIG_FLOAT_COILFANGDRAENEI_DIFF, "Solocraft.CoilfangDraenei", 5.0);
-    setConfig(CONFIG_FLOAT_COILFANGRAID_DIFF, "Solocraft.CoilfangRaid", 25.0);
-    setConfig(CONFIG_FLOAT_TEMPESTKEEPRAID_DIFF, "Solocraft.TempestKeepRaid", 25.0);
-    setConfig(CONFIG_FLOAT_TEMPESTKEEPARCANE_DIFF, "Solocraft.TempestKeepArcane", 5.0);
-    setConfig(CONFIG_FLOAT_TEMPESTKEEPATRIUM_DIFF, "Solocraft.TempestKeepAtrium", 5.0);
-    setConfig(CONFIG_FLOAT_TEMPESTKEEPFACTORY_DIFF, "Solocraft.TempestKeepFactory", 5.0);
-    setConfig(CONFIG_FLOAT_AUCHINDOUNSHADOW_DIFF, "Solocraft.AuchindounShadow", 5.0);
-    setConfig(CONFIG_FLOAT_AUCHINDOUNDEMON_DIFF, "Solocraft.AuchindounDemon", 5.0);
-    setConfig(CONFIG_FLOAT_AUCHINDOUNETHEREAL_DIFF, "Solocraft.AuchindounEthereal", 5.0);
-    setConfig(CONFIG_FLOAT_AUCHINDOUNDRAENEI_DIFF, "Solocraft.AuchindounDraenei", 5.0);
-    setConfig(CONFIG_FLOAT_HILLSBRADPAST_DIFF, "Solocraft.HillsbradPast", 5.0);
-    setConfig(CONFIG_FLOAT_BLACKTEMPLE_DIFF, "Solocraft.BlackTemple", 25.0);
-    setConfig(CONFIG_FLOAT_GRUULSLAIR_DIFF, "Solocraft.GruulsLair", 25.0);
-    setConfig(CONFIG_FLOAT_ZULAMAN_DIFF, "Solocraft.ZulAman", 5.0);
-    setConfig(CONFIG_FLOAT_SUNWELLPLATEAU_DIFF, "Solocraft.SunwellPlateau", 25.0);
-    setConfig(CONFIG_FLOAT_SUNWELL5MANFIX_DIFF, "Solocraft.Sunwell5ManFix", 5.0);
-    //TBC Heroics
-    setConfig(CONFIG_FLOAT_HEROIC_CAVERNSOFTIME_DIFF, "Solocraft.CavernsOfTimeH", 5.0);
-    setConfig(CONFIG_FLOAT_HEROIC_HELLFIREMILITARY_DIFF, "Solocraft.HellfireMilitaryH", 5.0);
-    setConfig(CONFIG_FLOAT_HEROIC_HELLFIREDEMON_DIFF, "Solocraft.HellfireDemonH", 5.0);
-    setConfig(CONFIG_FLOAT_HEROIC_HELLFIRERAMPART_DIFF, "Solocraft.HellfireRampartH", 5.0);
-    setConfig(CONFIG_FLOAT_HEROIC_COILFANGPUMPING_DIFF, "Solocraft.CoilfangPumpingH", 5.0);
-    setConfig(CONFIG_FLOAT_HEROIC_COILFANGMARSH_DIFF, "Solocraft.CoilfangMarshH", 5.0);
-    setConfig(CONFIG_FLOAT_HEROIC_COILFANGDRAENEI_DIFF, "Solocraft.CoilfangDraeneiH", 5.0);
-    setConfig(CONFIG_FLOAT_HEROIC_TEMPESTKEEPARCANE_DIFF, "Solocraft.TempestKeepArcaneH", 5.0);
-    setConfig(CONFIG_FLOAT_HEROIC_TEMPESTKEEPATRIUM_DIFF, "Solocraft.TempestKeepAtriumH", 5.0);
-    setConfig(CONFIG_FLOAT_HEROIC_TEMPESTKEEPFACTORY_DIFF, "Solocraft.TempestKeepFactoryH", 5.0);
-    setConfig(CONFIG_FLOAT_HEROIC_AUCHINDOUNSHADOW_DIFF, "Solocraft.AuchindounShadowH", 5.0);
-    setConfig(CONFIG_FLOAT_HEROIC_AUCHINDOUNDEMON_DIFF, "Solocraft.AuchindounDemonH", 5.0);
-    setConfig(CONFIG_FLOAT_HEROIC_AUCHINDOUNETHEREAL_DIFF, "Solocraft.AuchindounEtherealH", 5.0);
-    setConfig(CONFIG_FLOAT_HEROIC_AUCHINDOUNDRAENEI_DIFF, "Solocraft.AuchindounDraeneiH", 5.0);
-    setConfig(CONFIG_FLOAT_HEROIC_HILLSBRADPAST_DIFF, "Solocraft.HillsbradPastH", 5.0);
-    setConfig(CONFIG_FLOAT_HEROIC_ZULAMAN_DIFF, "Solocraft.ZulAmanH", 5.0);
-    setConfig(CONFIG_FLOAT_HEROIC_SUNWELL5MANFIX_DIFF, "Solocraft.Sunwell5ManFixH", 5.0);
-    //End Solocraft Config
-
-    sTransmogrification->LoadConfig(reload);
-
-    setConfig(CONFIG_UINT32_DUAL_SPEC_ITEM_ID, "Custom.DualSpecItemId", 17731);
-    setConfig(CONFIG_UINT32_DUAL_SPEC_COST, "Custom.DualSpecCost", 10000000);
 
     sLog.outString();
 }
@@ -1606,16 +1432,6 @@ void World::SetInitialWorldSettings()
 #ifdef BUILD_PLAYERBOT
     PlayerbotMgr::SetInitialWorldSettings();
 #endif
-#ifdef ENABLE_PLAYERBOTS
-    sPlayerbotAIConfig.Initialize();
-#endif
-    sTransmogrification->LoadConfig(false);
-    CharacterDatabase.Execute("DELETE FROM custom_transmogrification WHERE NOT EXISTS (SELECT 1 FROM item_instance WHERE item_instance.guid = custom_transmogrification.GUID)");
-#ifdef PRESETS
-    // Clean even if disabled
-    // Dont delete even if player has more presets than should
-    CharacterDatabase.Execute("DELETE FROM `custom_transmogrification_sets` WHERE NOT EXISTS(SELECT 1 FROM characters WHERE characters.guid = custom_transmogrification_sets.Owner)");
-#endif
     sLog.outString("---------------------------------------");
     sLog.outString("      CMANGOS: World initialized       ");
     sLog.outString("---------------------------------------");
@@ -1678,59 +1494,6 @@ void World::Update(uint32 diff)
     m_currentMSTime = WorldTimer::getMSTime();
     m_currentTime = std::chrono::time_point_cast<std::chrono::milliseconds>(Clock::now());
     m_currentDiff = diff;
-    m_currentDiffSum += diff;
-    m_currentDiffSumIndex++;
-    m_histDiff.push_back(diff);
-    m_maxDiff = std::max(m_maxDiff, diff);
-
-    while (m_histDiff.size() >= 600)
-    {
-        m_currentDiffSum -= m_histDiff.front();
-        m_histDiff.pop_front();
-    }
-
-    m_averageDiff = (uint32)(m_currentDiffSum / m_histDiff.size());
-
-    if (m_currentDiffSumIndex && m_currentDiffSumIndex % 60 == 0)
-    {
-        //m_averageDiff = (uint32)(m_currentDiffSum / m_currentDiffSumIndex);
-         //if (m_maxDiff < m_averageDiff)
-         //    m_maxDiff = m_averageDiff;
-        sLog.outBasic("Avg Diff: %u. Sessions online: %u.", m_averageDiff, (uint32)GetActiveSessionCount());
-        sLog.outBasic("Max Diff: %u.", m_maxDiff);
-    }
-    if (m_currentDiffSum % 3000 == 0)
-    {
-        m_maxDiff = *std::max_element(m_histDiff.begin(), m_histDiff.end());
-    }
-    /*
-    if (m_currentDiffSum > 300000)
-    {
-        m_currentDiffSum = 0;
-        m_currentDiffSumIndex = 0;
-        if (m_maxDiff > m_averageDiff)
-        {
-            m_maxDiff = m_averageDiff;
-            sLog.outBasic("Max Diff reset to: %u.", m_maxDiff);
-        }
-    }
-    if (GetActiveSessionCount())
-    {
-        if (m_currentDiffSumIndex && (m_currentDiffSumIndex % 5 == 0))
-        {
-            uint32 tempDiff = (uint32)(m_currentDiffSum / m_currentDiffSumIndex);
-            if (tempDiff > m_averageDiff)
-            {
-                m_averageDiff = tempDiff;
-            }
-            if (m_maxDiff < tempDiff)
-            {
-                m_maxDiff = tempDiff;
-                sLog.outBasic("Max Diff Increased: %u.", m_maxDiff);
-            }
-        }
-    }
-    */
 
     ///- Update the different timers
     for (auto& m_timer : m_timers)
@@ -1785,19 +1548,6 @@ void World::Update(uint32 diff)
         sAuctionHouseBot.Update();
         m_timers[WUPDATE_AHBOT].Reset();
     }
-#endif
-
-#ifdef ENABLE_PLAYERBOTS
-#ifndef BUILD_AHBOT
-    /// <li> Handle AHBot operations
-    if (m_timers[WUPDATE_AHBOT].Passed())
-    {
-        auctionbot.Update();
-        m_timers[WUPDATE_AHBOT].Reset();
-    }
-#endif
-    sRandomPlayerbotMgr.UpdateAI(diff);
-    sRandomPlayerbotMgr.UpdateSessions(diff);
 #endif
 
     /// <li> Handle session updates
@@ -2290,11 +2040,6 @@ void World::ShutdownServ(uint32 time, uint32 options, uint8 exitcode)
         m_ShutdownTimer = time;
         ShutdownMsg(true);
     }
-
-#ifdef ENABLE_PLAYERBOTS
-    //sRandomPlayerbotMgr.LogoutAllBots();
-#endif
-
 }
 
 /// Display a shutdown message to the user(s)
@@ -2402,7 +2147,6 @@ void World::UpdateResultQueue()
     CharacterDatabase.ProcessResultQueue();
     WorldDatabase.ProcessResultQueue();
     LoginDatabase.ProcessResultQueue();
-    PlayerbotDatabase.ProcessResultQueue();
 }
 
 void World::UpdateRealmCharCount(uint32 accountId)

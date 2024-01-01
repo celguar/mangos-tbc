@@ -51,16 +51,8 @@ bool TargetedMovementGeneratorMedium<T, D>::Update(T& owner, const uint32& time_
     // Trying to detect error
     if (i_target->GetMap() != owner.GetMap())
     {
-        if (i_target.getTarget() && i_target.getSource())
-        {
-            sLog.outCustomLog("TargetedMovementGeneratorMedium::Update(): Target %s left map id %u for map id %u out of order!",
-                i_target->GetGuidStr().c_str(), i_target->GetMapId(), owner.GetMapId());
-        }
-        else
-        {
-            sLog.outCustomLog("TargetedMovementGeneratorMedium::Update(): Target left for map id %u out of order!",
-                owner.GetMapId());
-        }
+        sLog.outCustomLog("TargetedMovementGeneratorMedium::Update(): Target %s left map id %u for map id %u out of order!",
+                      i_target->GetGuidStr().c_str(), i_target->GetMapId(), owner.GetMapId());
         return !static_cast<D*>(this)->RemoveOnInvalid();
     }
 
@@ -588,7 +580,7 @@ void ChaseMovementGenerator::CutPath(Unit& owner, PointsArray& path)
 {
     if (this->i_offset != 0.f) // need to cut path until most distant viable point
     {
-        const float dist = (i_offset * (owner.IsPlayer() ? 1.0f : CHASE_MOVE_CLOSER_FACTOR)) + (this->i_target->GetCombinedCombatReach(&owner, false) * CHASE_DEFAULT_RANGE_FACTOR);
+        const float dist = (i_offset * CHASE_MOVE_CLOSER_FACTOR) + (this->i_target->GetCombinedCombatReach(&owner, false) * CHASE_DEFAULT_RANGE_FACTOR);
         const float distSquared = (dist * dist);
         float tarX, tarY, tarZ;
         this->i_target->GetPosition(tarX, tarY, tarZ);
@@ -740,9 +732,6 @@ float FollowMovementGenerator::GetSpeed(Unit& owner) const
     // Followers sync with master's speed when not in combat
     // Use default speed when a mix of PC and NPC units involved (escorting?)
     if (owner.HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED) == i_target->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED))
-#ifdef ENABLE_PLAYERBOTS
-        if (!(!m_boost && owner.IsPlayer() && !((Player*)(&owner))->isRealPlayer())) //Do not speed up bots when not boosting. 
-#endif
         speed = i_target->GetSpeedInMotion();
 
     // Catchup boost is not allowed, stop here:

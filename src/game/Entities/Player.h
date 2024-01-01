@@ -64,11 +64,6 @@ struct FactionTemplateEntry;
 #include "PlayerBot/Base/PlayerbotAI.h"
 #endif
 
-#ifdef ENABLE_PLAYERBOTS
-class PlayerbotAI;
-class PlayerbotMgr;
-#endif
-
 struct AreaTrigger;
 
 typedef std::deque<Mail*> PlayerMails;
@@ -120,14 +115,7 @@ struct PlayerSpell
     bool disabled          : 1;                             // first rank has been learned in result talent learn but currently talent unlearned, save max learned ranks
 };
 
-struct PlayerTalent
-{
-    PlayerSpellState state : 8;
-    uint8 spec : 8;
-};
-
 typedef std::unordered_map<uint32, PlayerSpell> PlayerSpellMap;
-typedef std::unordered_map<uint32, PlayerTalent> PlayerTalentMap;
 
 struct SpellCooldown
 {
@@ -767,7 +755,6 @@ enum PlayerLoginQueryIndex
     PLAYER_LOGIN_QUERY_LOADBGDATA,
     PLAYER_LOGIN_QUERY_LOADACCOUNTDATA,
     PLAYER_LOGIN_QUERY_LOADSKILLS,
-    PLAYER_LOGIN_QUERY_LOADTALENTS,
     PLAYER_LOGIN_QUERY_LOADMAILS,
     PLAYER_LOGIN_QUERY_LOADMAILEDITEMS,
     PLAYER_LOGIN_QUERY_LOADWEEKLYQUESTSTATUS,
@@ -900,22 +887,6 @@ struct TradeStatusInfo
     uint8 Slot;
 };
 
-/* World of Warcraft Armory */
-struct WowarmoryFeedEntry
-{
-    uint32 guid;         // Player GUID
-    time_t date;         // Log date
-    uint32 type;         // TYPE_ACHIEVEMENT_FEED, TYPE_ITEM_FEED, TYPE_BOSS_FEED
-    uint32 data;         // TYPE_ITEM_FEED: item_entry, TYPE_BOSS_FEED: creature_entry
-    uint32 item_guid;    // Can be 0
-    uint32 item_quality; // Can be 0
-    uint8  difficulty;   // Can be 0
-    int    counter;      // Can be 0
-};
-
-typedef std::vector<WowarmoryFeedEntry> WowarmoryFeeds;
-/* World of Warcraft Armory */
-
 class TradeData
 {
     public:                                                 // constructors
@@ -1005,10 +976,6 @@ class Player : public Unit
 
         void Update(const uint32 diff) override;
         void Heartbeat() override;
-
-#ifdef ENABLE_PLAYERBOTS
-        void UpdateAI(const uint32 diff, bool minimal = false);
-#endif
 
         static bool BuildEnumData(QueryResult* result,  WorldPacket& p_data);
 
@@ -1167,7 +1134,6 @@ class Player : public Unit
         uint8 FindEquipSlot(ItemPrototype const* proto, uint32 slot, bool swap) const;
         uint32 GetItemCount(uint32 item, bool inBankAlso = false, Item* skipItem = nullptr) const;
         Item* GetItemByGuid(ObjectGuid guid) const;
-        Item* GetItemByEntry(uint32 item) const;
         Item* GetItemByPos(uint16 pos) const;
         Item* GetItemByPos(uint8 bag, uint8 slot) const;
         uint32 GetItemDisplayIdInSlot(uint8 bag, uint8 slot) const;
@@ -1464,10 +1430,6 @@ class Player : public Unit
 
         bool LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder);
 
-#ifdef ENABLE_PLAYERBOTS
-        bool MinimalLoadFromDB(std::unique_ptr<QueryResult> result, uint32 guid);
-#endif
-
         static uint32 GetZoneIdFromDB(ObjectGuid guid);
         static uint32 GetLevelFromDB(ObjectGuid guid);
         static bool   LoadPositionFromDB(ObjectGuid guid, uint32& mapid, float& x, float& y, float& z, float& o, bool& in_flight);
@@ -1575,7 +1537,6 @@ class Player : public Unit
         std::pair<float, float> RequestFollowData(ObjectGuid guid);
         void RelinquishFollowData(ObjectGuid guid);
 
-        bool HasTalent(uint32 spell, uint8 spec) const;
         bool HasSpell(uint32 spell) const override;
         bool HasActiveSpell(uint32 spell) const;            // show in spellbook
         TrainerSpellState GetTrainerSpellState(TrainerSpell const* trainer_spell, uint32 reqLevel) const;
@@ -1596,8 +1557,6 @@ class Player : public Unit
         void learnQuestRewardedSpells();
         void learnQuestRewardedSpells(Quest const* quest);
         void learnSpellHighRank(uint32 spellid);
-        void learnClassLevelSpells(bool includeHighLevelQuestRewards = false);
-        void addTalent(uint32 spellId, uint8 spec, bool learning);
 
         uint32 GetFreeTalentPoints() const { return GetUInt32Value(PLAYER_CHARACTER_POINTS1); }
         void SetFreeTalentPoints(uint32 points) { SetUInt32Value(PLAYER_CHARACTER_POINTS1, points); }
@@ -1625,20 +1584,6 @@ class Player : public Unit
         void SetSpellClass(uint8 playerClass);
         SpellFamily GetSpellClass() const { return m_spellClassName; } // client function equivalent - says what player can cast
 
-        // dual spec
-        uint8 m_activeSpec;
-        uint8 m_specsCount;
-
-        void ActivateSpec(uint8 spec);
-        uint8 GetActiveSpec() { return m_activeSpec; }
-        void SetActiveSpec(uint8 spec) { m_activeSpec = spec; }
-        uint8 GetSpecsCount() { return m_specsCount; }
-        void SetSpecsCount(uint8 count) { m_specsCount = count; }
-
-        std::string GetSpecName(uint8 spec);
-        void SetSpecName(uint8 spec, const char* specName);
-        std::string specNames[MAX_TALENT_SPECS];
-
         void setResurrectRequestData(ObjectGuid guid, uint32 mapId, float X, float Y, float Z, uint32 health, uint32 mana)
         {
             m_resurrectGuid = guid;
@@ -1663,8 +1608,7 @@ class Player : public Unit
         static bool IsActionButtonDataValid(uint8 button, uint32 action, uint8 type, Player* player);
         ActionButton* addActionButton(uint8 button, uint32 action, uint8 type);
         void removeActionButton(uint8 button);
-        void SendInitialActionButtons() const { SendActionButtons(1); }
-        void SendActionButtons(uint32 state) const;
+        void SendInitialActionButtons() const;
 
         PvPInfo pvpInfo;
         void UpdatePvP(bool state, bool overriding = false);
@@ -1752,7 +1696,6 @@ class Player : public Unit
         void UpdateAttackPowerAndDamage(bool ranged = false) override;
         void UpdateShieldBlockValue();
         void UpdateDamagePhysical(WeaponAttackType attType) override;
-        void ApplySpellPowerBonus(int32 amount, bool apply);
         void UpdateSpellHealingBonus();
         void UpdateSpellDamageBonus();
         void ApplyRatingMod(CombatRating cr, int32 value, bool apply);
@@ -1767,15 +1710,13 @@ class Player : public Unit
         float GetSpellCritFromIntellect() const;
         float GetRatingMultiplier(CombatRating cr) const;
         float GetRatingBonusValue(CombatRating cr) const;
-        uint32 GetBaseSpellPowerBonus() const { return m_baseSpellPower; }
 
         void UpdateBlockPercentage();
         void UpdateCritPercentage(WeaponAttackType attType);
         void UpdateAllCritPercentages();
         void UpdateParryPercentage();
         void UpdateDodgePercentage();
-        void UpdateMeleeHitChances();
-        void UpdateRangedHitChances();
+        void UpdateWeaponHitChances(WeaponAttackType attType);
         void UpdateSpellHitChances();
 
         void UpdateAllSpellCritChances();
@@ -1783,6 +1724,8 @@ class Player : public Unit
         void UpdateExpertise(WeaponAttackType attType);
         void UpdateManaRegen();
         void UpdateEnergyRegen();
+
+        void UpdateWeaponDependantStats(WeaponAttackType attType);
 
         ObjectGuid const& GetLootGuid() const { return m_lootGuid; }
         void SetLootGuid(ObjectGuid const& guid) { m_lootGuid = guid; }
@@ -2250,12 +2193,6 @@ class Player : public Unit
 
         void SendCinematicStart(uint32 CinematicSequenceId);
 
-        /* World of Warcraft Armory */
-        void CreateWowarmoryFeed(uint32 type, uint32 data, uint32 item_guid, uint32 item_quality);
-        void InitWowarmoryFeeds();
-        WowarmoryFeeds m_wowarmory_feeds;
-        /* World of Warcraft Armory */
-
         /*********************************************************/
         /***                 INSTANCE SYSTEM                   ***/
         /*********************************************************/
@@ -2315,7 +2252,6 @@ class Player : public Unit
         void SetTitle(CharTitlesEntry const* title, bool lost = false, bool send = true);
 
         void SendMessageToPlayer(std::string const& message) const; // debugging purposes
-        void SendThreatMessageToPlayer(std::string const& message) const; // debugging purposes
 
 #ifdef BUILD_PLAYERBOT
         // A Player can either have a playerbotMgr (to manage its bots), or have playerbotAI (if it is a bot), or
@@ -2326,17 +2262,6 @@ class Player : public Unit
         PlayerbotMgr* GetPlayerbotMgr() { return m_playerbotMgr; }
         void SetBotDeathTimer() { m_deathTimer = 0; }
         bool IsInDuel() const { return duel && duel->startTime != 0; }
-#endif
-
-#ifdef ENABLE_PLAYERBOTS
-        //EquipmentSets& GetEquipmentSets() { return m_EquipmentSets; }
-        void SetPlayerbotAI(PlayerbotAI* ai) { assert(!m_playerbotAI && !m_playerbotMgr); m_playerbotAI = ai; }
-        PlayerbotAI* GetPlayerbotAI() { return m_playerbotAI; }
-        void SetPlayerbotMgr(PlayerbotMgr* mgr) { assert(!m_playerbotAI && !m_playerbotMgr); m_playerbotMgr = mgr; }
-        PlayerbotMgr* GetPlayerbotMgr() { return m_playerbotMgr; }
-        void SetBotDeathTimer() { m_deathTimer = 0; }
-        bool isRealPlayer() { return m_session->GetRemoteAddress() != "disconnected/bot"; }
-        //PlayerTalentMap& GetTalentMap(uint8 spec) { return m_talents[spec]; }
 #endif
 
         virtual UnitAI* AI() override { if (m_charmInfo) return m_charmInfo->GetAI(); return nullptr; }
@@ -2441,7 +2366,6 @@ class Player : public Unit
         void _LoadMonthlyQuestStatus(std::unique_ptr<QueryResult> queryResult);
         void _LoadGroup(std::unique_ptr<QueryResult> queryResult);
         void _LoadSkills(std::unique_ptr<QueryResult> queryResult);
-        void _LoadTalents(std::unique_ptr<QueryResult> queryResult);
         void _LoadSpells(std::unique_ptr<QueryResult> queryResult);
         bool _LoadHomeBind(std::unique_ptr<QueryResult> queryResult);
         void _LoadDeclinedNames(std::unique_ptr<QueryResult> queryResult);
@@ -2464,8 +2388,6 @@ class Player : public Unit
         void _SaveWeeklyQuestStatus();
         void _SaveMonthlyQuestStatus();
         void _SaveSkills();
-        void _SaveTalents();
-        void _SaveTalentSpecNames();
         void _SaveSpells();
         void _SaveBGData();
         void _SaveStats();
@@ -2528,13 +2450,11 @@ class Player : public Unit
 
         PlayerMails m_mail;
         PlayerSpellMap m_spells;
-        PlayerTalentMap m_talents[MAX_TALENT_SPECS];
 
         ActionButtonList m_actionButtons;
 
         float m_auraBaseMod[BASEMOD_END][MOD_END];
         int16 m_baseRatingValue[MAX_COMBAT_RATING];
-        uint16 m_baseSpellPower;
 
         uint32 m_enchantmentFlatMod[MAX_ATTACK]; // TODO: Stat system - incorporate generically, exposes a required hidden weapon stat that does not apply when unarmed
 
@@ -2654,11 +2574,6 @@ class Player : public Unit
         std::unique_ptr<PlayerMenu> m_playerMenu;
 
 #ifdef BUILD_PLAYERBOT
-        PlayerbotAI* m_playerbotAI;
-        PlayerbotMgr* m_playerbotMgr;
-#endif
-
-#ifdef ENABLE_PLAYERBOTS
         PlayerbotAI* m_playerbotAI;
         PlayerbotMgr* m_playerbotMgr;
 #endif

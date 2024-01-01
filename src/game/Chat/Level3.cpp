@@ -66,10 +66,6 @@
 #include "Globals/CombatCondition.h"
 #include "World/WorldStateExpression.h"
 
-#ifdef _WIN32
-#include <tchar.h>
-#endif
-
 #ifdef BUILD_AHBOT
 #include "AuctionHouseBot/AuctionHouseBot.h"
 
@@ -1192,58 +1188,6 @@ bool ChatHandler::HandleAccountSetPasswordCommand(char* args)
     return false;
 }
 
-// Set collector's edition
-bool ::ChatHandler::HandleAccountSetEditionCommand(char* args)
-{
-    char* accountStr = ExtractOptNotLastArg(&args);
-
-    std::string targetAccountName;
-    Player* targetPlayer = nullptr;
-    uint32 targetAccountId = ExtractAccountId(&accountStr, &targetAccountName, &targetPlayer);
-    if (!targetAccountId)
-        return false;
-
-    bool value;
-    if (!ExtractOnOff(&args, value))
-    {
-        SendSysMessage(LANG_USE_BOL);
-        SetSentErrorMessage(true);
-        return false;
-    }
-
-    if (value)
-    {
-        if (targetPlayer && targetPlayer->GetSession()->HasAccountFlag(ACCOUNT_FLAG_COLLECTOR_CLASSIC | ACCOUNT_FLAG_COLLECTOR_TBC))
-        {
-            SendSysMessage("Target account already has Collector's Edition enabled");
-            return false;
-        }
-        if (targetPlayer)
-            targetPlayer->GetSession()->AddAccountFlag(ACCOUNT_FLAG_COLLECTOR_CLASSIC | ACCOUNT_FLAG_COLLECTOR_TBC);
-
-        LoginDatabase.PExecute("UPDATE account SET flags = flags | 0x%x WHERE id = %u", (ACCOUNT_FLAG_COLLECTOR_CLASSIC | ACCOUNT_FLAG_COLLECTOR_TBC), targetAccountId);
-        SendSysMessage("Target account Collector's Edition enabled");
-        return true;
-    }
-    else
-    {
-        if (targetPlayer && !targetPlayer->GetSession()->HasAccountFlag(ACCOUNT_FLAG_COLLECTOR_CLASSIC | ACCOUNT_FLAG_COLLECTOR_TBC))
-        {
-            SendSysMessage("Target account does not have Collector's Edition enabled");
-            return false;
-        }
-        if (targetPlayer)
-            targetPlayer->GetSession()->RemoveAccountFlag(ACCOUNT_FLAG_COLLECTOR_CLASSIC | ACCOUNT_FLAG_COLLECTOR_TBC);
-
-        LoginDatabase.PExecute("UPDATE account SET flags = flags & ~0x%x WHERE id = %u", (ACCOUNT_FLAG_COLLECTOR_CLASSIC | ACCOUNT_FLAG_COLLECTOR_TBC), targetAccountId);
-        SendSysMessage("Target account Collector's Edition disabled");
-        return true;
-    }
-
-    //PSendSysMessage(LANG_COMMAND_FLYMODE_STATUS, GetNameLink(target).c_str(), args);
-    return true;
-}
-
 bool ChatHandler::HandleMaxSkillCommand(char* /*args*/)
 {
     Player* SelectedPlayer = getSelectedPlayer();
@@ -1651,15 +1595,6 @@ bool ChatHandler::HandleLearnAllMyTalentsCommand(char* /*args*/)
     }
 
     SendSysMessage(LANG_COMMAND_LEARN_CLASS_TALENTS);
-    return true;
-}
-
-bool ChatHandler::HandleLearnAllMyLevelCommand(char* /*args*/)
-{
-    Player* player = m_session->GetPlayer();
-    player->learnClassLevelSpells();
-
-    SendSysMessage(LANG_COMMAND_LEARN_CLASS_SPELLS);
     return true;
 }
 
@@ -7009,44 +6944,6 @@ bool ChatHandler::HandleMmapTestHeight(char* args)
     uint32 genTime = WorldTimer::getMSTimeDiff(startTime, WorldTimer::getMSTime());
     PSendSysMessage("Generated %u valid points for %u try in %ums.", successes, tries, genTime);
     return true;
-}
-
-bool ChatHandler::HandleMmapDemoApp(char* args)
-{
-#ifdef _WIN32
-    Player* player = m_session->GetPlayer();
-
-    FILE* fin = fopen("RecastDemoMod.exe", "r");
-    if (!fin)
-    {
-        PSendSysMessage("No RecastDemoMod.exe found!");
-        return false;
-    }
-
-    GridPair p = MaNGOS::ComputeGridPair(player->GetPositionX(), player->GetPositionY());
-
-    int gx = 63 - p.x_coord;
-    int gy = 63 - p.y_coord;
-
-    std::string cmdline = "RecastDemoMod.exe -d " + sWorld.GetDataPath() + " -map " + std::to_string(player->GetMapId()) + " -tilex " + std::to_string(gx) + " -tiley " + std::to_string(gy);
-    LPTSTR szCmdline = _tcsdup(TEXT(cmdline.c_str()));
-    STARTUPINFO info = { sizeof(info) };
-    PROCESS_INFORMATION processInfo;
-    if (CreateProcess("RecastDemoMod.exe", szCmdline, NULL, NULL, TRUE, CREATE_NEW_PROCESS_GROUP, NULL, NULL, &info, &processInfo))
-    {
-        // don't wait for it to finish.
-        //::WaitForSingleObject(processInfo.hProcess, INFINITE);
-        // free up resources...
-        CloseHandle(processInfo.hProcess);
-        CloseHandle(processInfo.hThread);
-    }
-
-    PSendSysMessage("Running Recast Demo App at current tile");
-    return true;
-#else
-    PSendSysMessage("Command is Windows only");
-    return false;
-#endif
 }
 
 bool ChatHandler::HandleServerResetAllRaidCommand(char* /*args*/)

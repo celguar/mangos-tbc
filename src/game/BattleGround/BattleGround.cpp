@@ -269,10 +269,7 @@ BattleGround::~BattleGround()
     // unload map
     // map can be null at bg destruction
     if (m_bgMap)
-    {
         m_bgMap->SetUnload();
-        m_bgMap->SetBG(nullptr);
-    }
 
     // remove from bg free slot queue
     this->RemoveFromBgFreeSlotQueue();
@@ -1687,21 +1684,6 @@ uint32 BattleGround::GetSingleCreatureGuid(uint8 event1, uint8 event2)
 }
 
 /**
-  Function returns a gameobject guid from event map
-
-  @param    event1
-  @param    event2
-*/
-uint32 BattleGround::GetSingleGameObjectGuid(uint8 event1, uint8 event2)
-{
-    auto itr = m_eventObjects[MAKE_PAIR32(event1, event2)].gameobjects.begin();
-    if (itr != m_eventObjects[MAKE_PAIR32(event1, event2)].gameobjects.end())
-        return *itr;
-
-    return ObjectGuid();
-}
-
-/**
   Method that handles gameobject load from DB event map
 
   @param    gameobject
@@ -1992,15 +1974,11 @@ void BattleGround::HandleTriggerBuff(ObjectGuid go_guid)
 */
 void BattleGround::HandleKillPlayer(Player* player, Player* killer)
 {
-    if (!player->HasAura(27827)) // do not count spirit of redemption
-    {
-        // add +1 deaths
-        UpdatePlayerScore(player, SCORE_DEATHS, 1);
-        player->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE);
-    }
+    // add +1 deaths
+    UpdatePlayerScore(player, SCORE_DEATHS, 1);
 
     // add +1 kills to group and +1 killing_blows to killer
-    if (killer && player->GetFactionTemplateEntry() != killer->GetFactionTemplateEntry())
+    if (killer)
     {
         UpdatePlayerScore(killer, SCORE_HONORABLE_KILLS, 1);
         UpdatePlayerScore(killer, SCORE_KILLING_BLOWS, 1);

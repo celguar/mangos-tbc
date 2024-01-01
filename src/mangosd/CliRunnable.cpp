@@ -497,7 +497,7 @@ bool ChatHandler::HandleAccountCreateCommand(char* args)
     if (ExtractUInt32(&args, expansion))
         result = sAccountMgr.CreateAccount(account_name, password, expansion);
     else
-        result = sAccountMgr.CreateAccount(account_name, password, MAX_EXPANSION);
+        result = sAccountMgr.CreateAccount(account_name, password);
     switch (result)
     {
         case AOR_OK:

@@ -1974,13 +1974,6 @@ void WorldObject::SendMessageToSet(WorldPacket const& data, bool /*bToSelf*/) co
         GetMap()->MessageBroadcast(this, data);
 }
 
-void WorldObject::SendMessageToSet(std::string const& data, bool /*bToSelf*/) const
-{
-    // if object is in world, map for it already created!
-    if (IsInWorld())
-        GetMap()->ThreatMessageBroadcast(this, data);
-}
-
 void WorldObject::SendMessageToSetInRange(WorldPacket const& data, float dist, bool /*bToSelf*/) const
 {
     // if object is in world, map for it already created!
@@ -2563,9 +2556,6 @@ struct WorldObjectChangeAccumulator
         // send self fields changes in another way, otherwise
         // with new camera system when player's camera too far from player, camera wouldn't receive packets and changes from player
         if (i_object.isType(TYPEMASK_PLAYER))
-#ifdef ENABLE_PLAYERBOTS
-            if (((Player*)&i_object)->isRealPlayer())
-#endif
             i_object.BuildUpdateDataForPlayer((Player*)&i_object, i_updateDatas);
     }
 
@@ -2574,11 +2564,7 @@ struct WorldObjectChangeAccumulator
         for (auto& iter : m)
         {
             Player* owner = iter.getSource()->GetOwner();
-#ifdef ENABLE_PLAYERBOTS
-            if (owner != &i_object && owner->isRealPlayer() && owner->HasAtClient(&i_object))
-#else
             if (owner != &i_object && owner->HasAtClient(&i_object))
-#endif
                 i_object.BuildUpdateDataForPlayer(owner, i_updateDatas);
         }
     }

@@ -301,9 +301,6 @@ bool GameObject::Create(uint32 dbGuid, uint32 guidlow, uint32 name_id, Map* map,
     // Check if GameObject is Large, skip if map has same or better visibility (e.g. Battleground)
     if (GetGOInfo()->IsLargeGameObject() && GetVisibilityData().GetVisibilityDistance() < VISIBILITY_DISTANCE_LARGE)
         GetVisibilityData().SetVisibilityDistanceOverride(VisibilityDistanceType::Large);
-    // set maximum visibility for some object types
-    if (GetGOInfo()->IsInfiniteGameObject() && !GetVisibilityData().IsVisibilityOverridden() && GetVisibilityData().GetVisibilityDistance() < MAX_VISIBILITY_DISTANCE)
-        GetVisibilityData().SetVisibilityDistanceOverride(VisibilityDistanceType::Infinite);
 
     if (GetEntry() == 187039) // Smuggled Mana Cell - only GO in phase in TBC
         SetPhaseMask(2);
@@ -688,6 +685,9 @@ void GameObject::Update(const uint32 diff)
             if (AI())
                 AI()->JustDespawned();
 
+            if (InstanceData* iData = GetMap()->GetInstanceData())
+                iData->OnObjectDespawn(this);
+
             if (!m_respawnOverriden)
             {
                 // since pool system can fail to roll unspawned object, this one can remain spawned, so must set respawn nevertheless
@@ -790,6 +790,9 @@ void GameObject::Delete()
 
     if (AI())
         AI()->JustDespawned();
+
+    if (InstanceData* iData = GetMap()->GetInstanceData())
+        iData->OnObjectDespawn(this);
 
     if (uint16 poolid = sPoolMgr.IsPartOfAPool<GameObject>(GetDbGuid()))
         sPoolMgr.UpdatePool<GameObject>(*GetMap()->GetPersistentState(), poolid, GetDbGuid());

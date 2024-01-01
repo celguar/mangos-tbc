@@ -308,7 +308,6 @@ void WorldState::Load()
     StartSunwellGatePhase();
     HandleSunsReachSubPhaseTransition(m_sunsReachData.m_subphaseMask, true);
     StartExpansionEvent();
-    StartArenaSeason();
 }
 
 void WorldState::Save(SaveIds saveId)
@@ -382,26 +381,6 @@ void WorldState::HandleGameObjectUse(GameObject* go, Unit* user)
 {
     switch (go->GetEntry())
     {
-        case OBJECT_MAGTHERIDONS_HEAD:
-        {
-            std::lock_guard<std::mutex> guard(m_mutex);
-            if (Player* player = dynamic_cast<Player*>(user))
-            {
-                if (player->GetTeam() == HORDE)
-                {
-                    m_isMagtheridonHeadSpawnedHorde = true;
-                    m_guidMagtheridonHeadHorde = go->GetObjectGuid();
-                    BuffMagtheridonTeam(HORDE);
-                }
-                else
-                {
-                    m_isMagtheridonHeadSpawnedAlliance = true;
-                    m_guidMagtheridonHeadAlliance = go->GetObjectGuid();
-                    BuffMagtheridonTeam(ALLIANCE);
-                }
-            }
-            break;
-        }
         case OBJECT_EVENT_TRAP_THRALL:
         {
             HandleExternalEvent(CUSTOM_EVENT_LOVE_IS_IN_THE_AIR_LEADER, LOVE_LEADER_THRALL);
@@ -457,28 +436,7 @@ void WorldState::HandleGameObjectUse(GameObject* go, Unit* user)
 
 void WorldState::HandleGameObjectRevertState(GameObject* go)
 {
-    switch (go->GetEntry())
-    {
-        case OBJECT_MAGTHERIDONS_HEAD:
-        {
-            std::lock_guard<std::mutex> guard(m_mutex);
-            if (go->GetObjectGuid() == m_guidMagtheridonHeadHorde)
-            {
-                m_isMagtheridonHeadSpawnedHorde = false;
-                m_guidMagtheridonHeadHorde = ObjectGuid();
-                DispelMagtheridonTeam(HORDE);
-            }
-            else if (go->GetObjectGuid() == m_guidMagtheridonHeadAlliance)
-            {
-                m_isMagtheridonHeadSpawnedAlliance = false;
-                m_guidMagtheridonHeadAlliance = ObjectGuid();
-                DispelMagtheridonTeam(ALLIANCE);
-            }
-            break;
-        }
-        default:
-            break;
-    }
+
 }
 
 void WorldState::HandlePlayerEnterZone(Player* player, uint32 zoneId)
@@ -733,6 +691,11 @@ Map* WorldState::GetMap(uint32 mapId, Position const& invZone)
 
 void WorldState::BuffMagtheridonTeam(Team team)
 {
+    std::lock_guard<std::mutex> guard(m_mutex);
+    if (team == HORDE)
+        m_isMagtheridonHeadSpawnedHorde = true;
+    else
+        m_isMagtheridonHeadSpawnedAlliance = true;
     for (ObjectGuid& guid : m_magtheridonHeadPlayers)
     {
         if (Player* player = sObjectMgr.GetPlayer(guid))
@@ -759,6 +722,11 @@ void WorldState::BuffMagtheridonTeam(Team team)
 
 void WorldState::DispelMagtheridonTeam(Team team)
 {
+    std::lock_guard<std::mutex> guard(m_mutex);
+    if (team == HORDE)
+        m_isMagtheridonHeadSpawnedHorde = false;
+    else
+        m_isMagtheridonHeadSpawnedAlliance = false;
     for (ObjectGuid& guid : m_magtheridonHeadPlayers)
     {
         if (Player* player = sObjectMgr.GetPlayer(guid))
@@ -2682,33 +2650,6 @@ void WorldState::StartExpansionEvent()
     {
         sGameEventMgr.StartEvent(GAME_EVENT_BEFORE_THE_STORM);
         RespawnHighlordKruul();
-    }
-}
-
-void WorldState::StartArenaSeason()
-{
-    if (m_expansion > EXPANSION_NONE)
-    {
-        uint32 seasonEvent = 0;
-        switch (sWorld.getConfig(CONFIG_UINT32_ARENA_SEASON_ID))
-        {
-        case 1:
-            seasonEvent = 53; // season 1
-            break;
-        case 2:
-            seasonEvent = 54; // season 2
-            break;
-        case 3:
-            seasonEvent = 55; // season 3
-            break;
-        case 4:
-            seasonEvent = 56; // season 4
-            break;
-        default:
-            break;
-        }
-        if (seasonEvent)
-            sGameEventMgr.StartEvent(seasonEvent);
     }
 }
 

@@ -40,10 +40,6 @@
 #include "Weather/Weather.h"
 #include "AI/ScriptDevAI/ScriptDevAIMgr.h"
 
-#ifdef ENABLE_PLAYERBOTS
-#include "playerbot.h"
-#endif
-
 #ifdef BUILD_METRICS
  #include "Metric/Metric.h"
 #endif
@@ -165,7 +161,7 @@ Map::Map(uint32 id, time_t expiry, uint32 InstanceId, uint8 SpawnMode)
       m_activeNonPlayersIter(m_activeNonPlayers.end()), m_onEventNotifiedIter(m_onEventNotifiedObjects.end()),
       i_gridExpiry(expiry), m_TerrainData(sTerrainMgr.LoadTerrain(id)),
       i_data(nullptr), i_script_id(0), m_transportsIterator(m_transports.begin()), m_spawnManager(*this),
-      m_variableManager(this), m_defaultLight(GetDefaultMapLight(id)), m_activeAreasTimer(0), hasRealPlayers(false)
+      m_variableManager(this), m_defaultLight(GetDefaultMapLight(id))
 {
     m_weatherSystem = new WeatherSystem(this);
 }
@@ -442,166 +438,6 @@ bool Map::Add(Player* player)
     player->GetViewPoint().Event_AddedToWorld(&(*grid)(cell.CellX(), cell.CellY()));
     UpdateObjectVisibility(player, cell, p);
 
-    //Start Solocraft Functions
-    if (sWorld.getConfig(CONFIG_BOOL_SOLOCRAFT_ENABLED))
-    {
-        //Get Config Values
-        //Balancing
-        SoloCraftDebuffEnable = sWorld.getConfig(CONFIG_BOOL_SOLOCRAFT_DEBUFF_ENABLE);
-        SoloCraftSpellMult = sWorld.getConfig(CONFIG_FLOAT_SOLOCRAFT_SPELLPOWER_MULT);
-        SoloCraftStatsMult = sWorld.getConfig(CONFIG_FLOAT_SOLOCRAFT_STATS_MULT);
-        //Level Thresholds
-        SolocraftLevelDiff = sWorld.getConfig(CONFIG_UINT32_SOLOCRAFT_MAX_LEVEL_DIFF);
-        //Default Value
-        SolocraftDungeonLevel = sWorld.getConfig(CONFIG_UINT32_DUNGEON_LEVEL);
-        //Dungeon Level
-        dungeons =
-        {
-            //Classic Instances
-            {33, sWorld.getConfig(CONFIG_UINT32_SHADOWFANGKEEP_LEVEL) },
-            {34, sWorld.getConfig(CONFIG_UINT32_STOCKADES_LEVEL) },
-            {36, sWorld.getConfig(CONFIG_UINT32_DEADMINES_LEVEL) },
-            {43, sWorld.getConfig(CONFIG_UINT32_WAILINGCAVERNS_LEVEL) },
-            {47, sWorld.getConfig(CONFIG_UINT32_RAZORFENKRAULINSTANCE_LEVEL) },
-            {48, sWorld.getConfig(CONFIG_UINT32_BLACKFATHOM_LEVEL) },
-            {70, sWorld.getConfig(CONFIG_UINT32_ULDAMAN_LEVEL) },
-            {90, sWorld.getConfig(CONFIG_UINT32_GNOMERAGONINSTANCE_LEVEL) },
-            {109, sWorld.getConfig(CONFIG_UINT32_SUNKENTEMPLE_LEVEL) },
-            {129, sWorld.getConfig(CONFIG_UINT32_RAZORFENDOWNS_LEVEL) },
-            {189, sWorld.getConfig(CONFIG_UINT32_MONASTERYINSTANCES_LEVEL) },                  // Scarlet Monastery
-            {209, sWorld.getConfig(CONFIG_UINT32_TANARISINSTANCE_LEVEL) },                     // Zul'Farrak
-            {229, sWorld.getConfig(CONFIG_UINT32_BLACKROCKSPIRE_LEVEL) },
-            {230, sWorld.getConfig(CONFIG_UINT32_BLACKROCKDEPTHS_LEVEL) },
-            {249, sWorld.getConfig(CONFIG_UINT32_ONYXIALAIRINSTANCE_LEVEL) },
-            {289, sWorld.getConfig(CONFIG_UINT32_SCHOOLOFNECROMANCY_LEVEL) },                  // Scholomance
-            {309, sWorld.getConfig(CONFIG_UINT32_ZULGURUB_LEVEL) },
-            {329, sWorld.getConfig(CONFIG_UINT32_STRATHOLME_LEVEL) },
-            {349, sWorld.getConfig(CONFIG_UINT32_MAURADON_LEVEL) },
-            {389, sWorld.getConfig(CONFIG_UINT32_ORGRIMMARINSTANCE_LEVEL) },                   // Ragefire Chasm
-            {409, sWorld.getConfig(CONFIG_UINT32_MOLTENCORE_LEVEL) },
-            {429, sWorld.getConfig(CONFIG_UINT32_DIREMAUL_LEVEL) },
-            {469, sWorld.getConfig(CONFIG_UINT32_BLACKWINGLAIR_LEVEL) },
-            {509, sWorld.getConfig(CONFIG_UINT32_AHNQIRAJ_LEVEL) },                            // Ruins of Ahn'Qiraj
-            {531, sWorld.getConfig(CONFIG_UINT32_AHNQIRAJTEMPLE_LEVEL) },
-            //TBC Instances
-            {269, sWorld.getConfig(CONFIG_UINT32_CAVERNSOFTIME_LEVEL) },                       // The Black Morass
-            {532, sWorld.getConfig(CONFIG_UINT32_KARAZAHN_LEVEL) },
-            {534, sWorld.getConfig(CONFIG_UINT32_HYJALPAST_LEVEL) },                           // The Battle for Mount Hyjal - Hyjal Summit
-            {540, sWorld.getConfig(CONFIG_UINT32_HELLFIREMILITARY_LEVEL) },                    // The Shattered Halls
-            {542, sWorld.getConfig(CONFIG_UINT32_HELLFIREDEMON_LEVEL) },                       // The Blood Furnace
-            {543, sWorld.getConfig(CONFIG_UINT32_HELLFIRERAMPART_LEVEL) },
-            {544, sWorld.getConfig(CONFIG_UINT32_HELLFIRERAID_LEVEL) },                        // Magtheridon's Lair
-            {545, sWorld.getConfig(CONFIG_UINT32_COILFANGPUMPING_LEVEL) },                     // The Steamvault
-            {546, sWorld.getConfig(CONFIG_UINT32_COILFANGMARSH_LEVEL) },                       // The Underbog
-            {547, sWorld.getConfig(CONFIG_UINT32_COILFANGDRAENEI_LEVEL) },                     // The Slavepens
-            {548, sWorld.getConfig(CONFIG_UINT32_COILFANGRAID_LEVEL) },                        // Serpentshrine Cavern
-            {550, sWorld.getConfig(CONFIG_UINT32_TEMPESTKEEPRAID_LEVEL) },                     // The Eye
-            {552, sWorld.getConfig(CONFIG_UINT32_TEMPESTKEEPARCANE_LEVEL) },                   // The Arcatraz
-            {553, sWorld.getConfig(CONFIG_UINT32_TEMPESTKEEPATRIUM_LEVEL) },                   // The Botanica
-            {554, sWorld.getConfig(CONFIG_UINT32_TEMPESTKEEPFACTORY_LEVEL) },                  // The Mechanar
-            {555, sWorld.getConfig(CONFIG_UINT32_AUCHINDOUNSHADOW_LEVEL) },                    // Shadow Labyrinth
-            {556, sWorld.getConfig(CONFIG_UINT32_AUCHINDOUNDEMON_LEVEL) },                     // Sethekk Halls
-            {557, sWorld.getConfig(CONFIG_UINT32_AUCHINDOUNETHEREAL_LEVEL) },                  // Mana-Tombs
-            {558, sWorld.getConfig(CONFIG_UINT32_AUCHINDOUNDRAENEI_LEVEL) },                   // Auchenai Crypts
-            {560, sWorld.getConfig(CONFIG_UINT32_HILLSBRADPAST_LEVEL) },                       // Old Hillsbrad Foothills
-            {564, sWorld.getConfig(CONFIG_UINT32_BLACKTEMPLE_LEVEL) },
-            {565, sWorld.getConfig(CONFIG_UINT32_GRUULSLAIR_LEVEL) },
-            {568, sWorld.getConfig(CONFIG_UINT32_ZULAMAN_LEVEL) },
-            {580, sWorld.getConfig(CONFIG_UINT32_SUNWELLPLATEAU_LEVEL) },
-            {585, sWorld.getConfig(CONFIG_UINT32_SUNWELL5MANFIX_LEVEL) },                      // Magister's Terrace
-        };
-        // Dungeon Difficulty
-        // Catch alls
-        D5 = sWorld.getConfig(CONFIG_FLOAT_DUNGEON_DIFF);
-        D10 = sWorld.getConfig(CONFIG_FLOAT_HEROIC_DIFF);
-        D25 = sWorld.getConfig(CONFIG_FLOAT_RAID25_DIFF);
-        D40 = sWorld.getConfig(CONFIG_FLOAT_RAID40_DIFF);
-        diff_Multiplier =
-        {
-            // WOW Classic Instances
-            {33, sWorld.getConfig(CONFIG_FLOAT_SHADOWFANGKEEP_DIFF) },
-            {34, sWorld.getConfig(CONFIG_FLOAT_STOCKADES_DIFF) },
-            {36, sWorld.getConfig(CONFIG_FLOAT_DEADMINES_DIFF) },
-            {43, sWorld.getConfig(CONFIG_FLOAT_WAILINGCAVERNS_DIFF) },
-            {47, sWorld.getConfig(CONFIG_FLOAT_RAZORFENKRAULINSTANCE_DIFF) },
-            {48, sWorld.getConfig(CONFIG_FLOAT_BLACKFATHOM_DIFF) },
-            {70, sWorld.getConfig(CONFIG_FLOAT_ULDAMAN_DIFF) },
-            {90, sWorld.getConfig(CONFIG_FLOAT_GNOMERAGONINSTANCE_DIFF) },
-            {109, sWorld.getConfig(CONFIG_FLOAT_SUNKENTEMPLE_DIFF) },
-            {129, sWorld.getConfig(CONFIG_FLOAT_RAZORFENDOWNS_DIFF) },
-            {189, sWorld.getConfig(CONFIG_FLOAT_MONASTERYINSTANCES_DIFF) },                     // Scarlet
-            {209, sWorld.getConfig(CONFIG_FLOAT_TANARISINSTANCE_DIFF) },                        // Zul'Farrak
-            {229, sWorld.getConfig(CONFIG_FLOAT_BLACKROCKSPIRE_DIFF) },
-            {230, sWorld.getConfig(CONFIG_FLOAT_BLACKROCKDEPTHS_DIFF) },
-            {249, sWorld.getConfig(CONFIG_FLOAT_ONYXIALAIRINSTANCE_DIFF) },
-            {289, sWorld.getConfig(CONFIG_FLOAT_SCHOOLOFNECROMANCY_DIFF) },                     // Scholo
-            {309, sWorld.getConfig(CONFIG_FLOAT_ZULGURUB_DIFF) },
-            {329, sWorld.getConfig(CONFIG_FLOAT_STRATHOLME_DIFF) },
-            {349, sWorld.getConfig(CONFIG_FLOAT_MAURADON_DIFF) },
-            {389, sWorld.getConfig(CONFIG_FLOAT_ORGRIMMARINSTANCE_DIFF) },                      // Ragefire
-            {409, sWorld.getConfig(CONFIG_FLOAT_MOLTENCORE_DIFF) },
-            {429, sWorld.getConfig(CONFIG_FLOAT_DIREMAUL_DIFF) },
-            {469, sWorld.getConfig(CONFIG_FLOAT_BLACKWINGLAIR_DIFF) },
-            {509, sWorld.getConfig(CONFIG_FLOAT_AHNQIRAJ_DIFF) },
-            {531, sWorld.getConfig(CONFIG_FLOAT_AHNQIRAJTEMPLE_DIFF) },
-            // BC Instances
-            {269, sWorld.getConfig(CONFIG_FLOAT_CAVERNSOFTIME_DIFF) },                          // Black Morass
-            {532, sWorld.getConfig(CONFIG_FLOAT_KARAZAHN_DIFF) },
-            {534, sWorld.getConfig(CONFIG_FLOAT_HYJALPAST_DIFF) },                             // Mount Hyjal
-            {540, sWorld.getConfig(CONFIG_FLOAT_HELLFIREMILITARY_DIFF) },                       // The Shattered Halls
-            {542, sWorld.getConfig(CONFIG_FLOAT_HELLFIREDEMON_DIFF) },                          // The Blood Furnace
-            {543, sWorld.getConfig(CONFIG_FLOAT_HELLFIRERAMPART_DIFF) },
-            {544, sWorld.getConfig(CONFIG_FLOAT_HELLFIRERAID_DIFF) },                          // Magtheridon's Lair
-            {545, sWorld.getConfig(CONFIG_FLOAT_COILFANGPUMPING_DIFF) },                        // The Steamvault
-            {546, sWorld.getConfig(CONFIG_FLOAT_COILFANGMARSH_DIFF) },                          // The Underbog
-            {547, sWorld.getConfig(CONFIG_FLOAT_COILFANGDRAENEI_DIFF) },                        // The Slavepens
-            {548, sWorld.getConfig(CONFIG_FLOAT_COILFANGRAID_DIFF) },                          // Serpentshrine Cavern
-            {550, sWorld.getConfig(CONFIG_FLOAT_TEMPESTKEEPRAID_DIFF) },                       // The Eye
-            {552, sWorld.getConfig(CONFIG_FLOAT_TEMPESTKEEPARCANE_DIFF) },                      // The Arcatraz
-            {553, sWorld.getConfig(CONFIG_FLOAT_TEMPESTKEEPATRIUM_DIFF) },                      // The Botanica
-            {554, sWorld.getConfig(CONFIG_FLOAT_TEMPESTKEEPFACTORY_DIFF) },                     // The Mechanar
-            {555, sWorld.getConfig(CONFIG_FLOAT_AUCHINDOUNSHADOW_DIFF) },                       // Shadow Labyrinth
-            {556, sWorld.getConfig(CONFIG_FLOAT_AUCHINDOUNDEMON_DIFF) },                        // Sethekk Halls
-            {557, sWorld.getConfig(CONFIG_FLOAT_AUCHINDOUNETHEREAL_DIFF) },                     // Mana-Tombs
-            {558, sWorld.getConfig(CONFIG_FLOAT_AUCHINDOUNDRAENEI_DIFF) },                      // Auchenai Crypts
-            {560, sWorld.getConfig(CONFIG_FLOAT_HILLSBRADPAST_DIFF) },                          // Old Hillsbrad Foothills
-            {564, sWorld.getConfig(CONFIG_FLOAT_BLACKTEMPLE_DIFF) },
-            {565, sWorld.getConfig(CONFIG_FLOAT_GRUULSLAIR_DIFF) },
-            {568, sWorld.getConfig(CONFIG_FLOAT_ZULAMAN_DIFF) },
-            {580, sWorld.getConfig(CONFIG_FLOAT_SUNWELLPLATEAU_DIFF) },
-            {585, sWorld.getConfig(CONFIG_FLOAT_SUNWELL5MANFIX_DIFF) },                         // Magister's Terrace
-        };
-        // Heroics
-        diff_Multiplier_Heroics =
-        {
-            // BC Instances Heroics
-            {269, sWorld.getConfig(CONFIG_FLOAT_HEROIC_CAVERNSOFTIME_DIFF) },                         // Black Morass H
-            {540, sWorld.getConfig(CONFIG_FLOAT_HEROIC_HELLFIREMILITARY_DIFF) },                      // The Shattered Halls H
-            {542, sWorld.getConfig(CONFIG_FLOAT_HEROIC_HELLFIREDEMON_DIFF) },                         // The Blood Furnace H
-            {543, sWorld.getConfig(CONFIG_FLOAT_HEROIC_HELLFIRERAMPART_DIFF) },                       // Heroic
-            {545, sWorld.getConfig(CONFIG_FLOAT_HEROIC_COILFANGPUMPING_DIFF) },                       // The Steamvault
-            {546, sWorld.getConfig(CONFIG_FLOAT_HEROIC_COILFANGMARSH_DIFF) },                         // The Underbog
-            {547, sWorld.getConfig(CONFIG_FLOAT_HEROIC_COILFANGDRAENEI_DIFF) },                       // The Slavepens  H
-            {552, sWorld.getConfig(CONFIG_FLOAT_HEROIC_TEMPESTKEEPARCANE_DIFF) },                     // The Arcatraz H
-            {553, sWorld.getConfig(CONFIG_FLOAT_HEROIC_TEMPESTKEEPATRIUM_DIFF) },                     // The Botanica H
-            {554, sWorld.getConfig(CONFIG_FLOAT_HEROIC_TEMPESTKEEPFACTORY_DIFF) },                    // The Mechanar H
-            {555, sWorld.getConfig(CONFIG_FLOAT_HEROIC_AUCHINDOUNSHADOW_DIFF) },                      // Shadow Labyrinth H
-            {556, sWorld.getConfig(CONFIG_FLOAT_HEROIC_AUCHINDOUNDEMON_DIFF) },                       // Sethekk Halls H
-            {557, sWorld.getConfig(CONFIG_FLOAT_HEROIC_AUCHINDOUNETHEREAL_DIFF) },                    // Mana-Tombs H
-            {558, sWorld.getConfig(CONFIG_FLOAT_HEROIC_AUCHINDOUNDRAENEI_DIFF) },                     // Auchenai Crypts H
-            {560, sWorld.getConfig(CONFIG_FLOAT_HEROIC_HILLSBRADPAST_DIFF) },                         // Old Hillsbrad Foothills H
-            {568, sWorld.getConfig(CONFIG_FLOAT_HEROIC_ZULAMAN_DIFF) },                               // Zul'Aman H
-            {585, sWorld.getConfig(CONFIG_FLOAT_HEROIC_SUNWELL5MANFIX_DIFF) },                        // Magister's Terrace H
-        };
-
-        Map* map = player->GetMap();
-        float difficulty = CalculateDifficulty(map, player);
-        int dunLevel = CalculateDungeonLevel(map, player);
-        int numInGroup = GetNumInGroup(player);
-        ApplyBuffs(player, map, difficulty, dunLevel, numInGroup);
-    }
-    //End Solocraft Functions
-
     if (IsRaid())
         player->RemoveAllGroupBuffsFromCaster(ObjectGuid());
 
@@ -689,29 +525,6 @@ void Map::MessageBroadcast(WorldObject const* obj, WorldPacket const& msg)
     // we have alot of blinking mobs because monster move packet send is broken...
     MaNGOS::ObjectMessageDeliverer post_man(msg);
     TypeContainerVisitor<MaNGOS::ObjectMessageDeliverer, WorldTypeMapContainer > message(post_man);
-    cell.Visit(p, message, *this, *obj, obj->GetVisibilityData().GetVisibilityDistance());
-}
-
-void Map::ThreatMessageBroadcast(WorldObject const* obj, std::string const& msg)
-{
-    CellPair p = MaNGOS::ComputeCellPair(obj->GetPositionX(), obj->GetPositionY());
-
-    if (p.x_coord >= TOTAL_NUMBER_OF_CELLS_PER_MAP || p.y_coord >= TOTAL_NUMBER_OF_CELLS_PER_MAP)
-    {
-        sLog.outError("Map::MessageBroadcast: Object (GUID: %u TypeId: %u) have invalid coordinates X:%f Y:%f grid cell [%u:%u]", obj->GetGUIDLow(), obj->GetTypeId(), obj->GetPositionX(), obj->GetPositionY(), p.x_coord, p.y_coord);
-        return;
-    }
-
-    Cell cell(p);
-    cell.SetNoCreate();
-
-    if (!loaded(GridPair(cell.data.Part.grid_x, cell.data.Part.grid_y)))
-        return;
-
-    // TODO: currently on continents when Visibility.Distance.InFlight > Visibility.Distance.Continents
-    // we have alot of blinking mobs because monster move packet send is broken...
-    MaNGOS::ObjectThreatMessageDeliverer post_man(msg);
-    TypeContainerVisitor<MaNGOS::ObjectThreatMessageDeliverer, WorldTypeMapContainer > message(post_man);
     cell.Visit(p, message, *this, *obj, obj->GetVisibilityData().GetVisibilityDistance());
 }
 
@@ -925,124 +738,19 @@ void Map::Update(const uint32& t_diff)
 #endif
     }
 
-    // active areas timer
-    m_activeAreasTimer += t_diff;
-    if (m_activeAreasTimer >= 10000)
-    {
-        m_activeAreasTimer = 0;
-        m_activeAreas.clear();
-        m_activeZones.clear();
-    }
-
-    if (!m_activeAreasTimer && IsContinent() && HasRealPlayers())
-    {
-        for (m_mapRefIter = m_mapRefManager.begin(); m_mapRefIter != m_mapRefManager.end(); ++m_mapRefIter)
-        {
-            Player* plr = m_mapRefIter->getSource();
-            if (plr && plr->IsInWorld())
-            {
-                if (plr->GetPlayerbotAI() && !plr->GetPlayerbotAI()->IsRealPlayer())
-                    continue;
-
-                if (plr->isAFK())
-                    continue;
-
-                if (!plr->isGMVisible())
-                    continue;
-
-                if (find(m_activeZones.begin(), m_activeZones.end(), plr->GetZoneId()) == m_activeZones.end())
-                    m_activeZones.push_back(plr->GetZoneId());
-
-                ContinentArea activeArea = sMapMgr.GetContinentInstanceId(GetId(), plr->GetPositionX(), plr->GetPositionY());
-                // check active area
-                if (activeArea != MAP_NO_AREA)
-                {
-                    if (!HasActiveAreas(activeArea))
-                        m_activeAreas.push_back(activeArea);
-                }
-            }
-        }
-    }
-
-    bool hasPlayers = false;
-    uint32 activeChars = 0;
-    uint32 avgDiff = sWorld.GetAverageDiff();
-    bool updateAI = urand(0, (HasRealPlayers() ? avgDiff : (avgDiff * 3))) < 10;
     /// update players at tick
     for (m_mapRefIter = m_mapRefManager.begin(); m_mapRefIter != m_mapRefManager.end(); ++m_mapRefIter)
     {
         Player* plr = m_mapRefIter->getSource();
         if (plr && plr->IsInWorld())
-        {
-            bool isInActiveArea = false;
-            if (!plr->GetPlayerbotAI() || plr->GetPlayerbotAI()->IsRealPlayer())
-            {
-                isInActiveArea = true;
-
-                hasPlayers = true;
-
-            }
-            else if (HasRealPlayers())
-            {
-                ContinentArea activeArea = MAP_NO_AREA;
-                if (IsContinent())
-                    activeArea = sMapMgr.GetContinentInstanceId(GetId(), plr->GetPositionX(), plr->GetPositionY());
-
-                isInActiveArea = IsContinent() ? (activeArea == MAP_NO_AREA ? false : HasActiveAreas(activeArea)) : HasRealPlayers();
-
-                /*if (isInActiveArea)
-                {
-                    if (avgDiff > 200 && IsContinent())
-                    {
-                        if (find(m_activeZones.begin(), m_activeZones.end(), plr->GetZoneId()) == m_activeZones.end())
-                            isInActiveArea = false;
-                    }
-                }*/
-            }
-            if (plr->GetPlayerbotAI() && plr->GetPlayerbotAI()->HasRealPlayerMaster())
-                isInActiveArea = true;
-            if (plr->InBattleGroundQueue() || plr->InBattleGround())
-                isInActiveArea = true;
-
-            if (isInActiveArea)
-                activeChars++;
-
             plr->Update(t_diff);
-            plr->UpdateAI(t_diff, !(isInActiveArea || updateAI || plr->IsInCombat()));
-        }
-    }
-
-    hasRealPlayers = hasPlayers;
-
-    if (IsContinent() && HasRealPlayers() && HasActiveAreas() && !m_activeAreasTimer)
-    {
-        sLog.outBasic("Map %u: Active Areas:Zones - %u:%u", GetId(), m_activeAreas.size(), m_activeZones.size());
-        sLog.outBasic("Map %u: Active Areas Chars - %u of %u", GetId(), activeChars, m_mapRefManager.getSize());
     }
 
     for (m_mapRefIter = m_mapRefManager.begin(); m_mapRefIter != m_mapRefManager.end(); ++m_mapRefIter)
     {
         Player* player = m_mapRefIter->getSource();
-        if (!player || !player->IsInWorld() || !player->IsPositionValid())
+        if (!player->IsInWorld() || !player->IsPositionValid())
             continue;
-
-#ifdef ENABLE_PLAYERBOTS
-        if (!player->isRealPlayer()) //For non-players only load the grid.
-        {
-            CellPair center = MaNGOS::ComputeCellPair(player->GetPositionX(), player->GetPositionY()).normalize();
-            uint32 cell_id = (center.y_coord * TOTAL_NUMBER_OF_CELLS_PER_MAP) + center.x_coord;
-
-            if (!isCellMarked(cell_id))
-            {
-                Cell cell(center);
-                const uint32 x = cell.GridX();
-                const uint32 y = cell.GridY();
-                if (!cell.NoCreate() || loaded(GridPair(x, y)))
-                    EnsureGridLoaded(player->GetCurrentCell());
-            }
-            continue;
-        }
-#endif
 
         VisitNearbyCellsOf(player, grid_object_update, world_object_update);
 
@@ -1052,7 +760,6 @@ void Map::Update(const uint32& t_diff)
     }
 
     // non-player active objects
-    bool updateObj = urand(0, (HasRealPlayers() ? avgDiff : (avgDiff * 3))) < 10;
     if (!m_activeNonPlayers.empty())
     {
         for (m_activeNonPlayersIter = m_activeNonPlayers.begin(); m_activeNonPlayersIter != m_activeNonPlayers.end();)
@@ -1066,27 +773,6 @@ void Map::Update(const uint32& t_diff)
 
             if (!obj->IsInWorld() || !obj->IsPositionValid())
                 continue;
-
-            // skip objects if world is laggy
-            if (IsContinent() && avgDiff > 100)
-            {
-                bool isInActiveArea = false;
-
-                ContinentArea activeArea = MAP_NO_AREA;
-                if (IsContinent())
-                    activeArea = sMapMgr.GetContinentInstanceId(GetId(), obj->GetPositionX(), obj->GetPositionY());
-
-                isInActiveArea = IsContinent() ? (activeArea == MAP_NO_AREA ? false : HasActiveAreas(activeArea)) : HasRealPlayers();
-
-                if (isInActiveArea && IsContinent())
-                {
-                    if (avgDiff > 150 && find(m_activeZones.begin(), m_activeZones.end(), obj->GetZoneId()) == m_activeZones.end())
-                        isInActiveArea = false;
-                }
-
-                if (!isInActiveArea && !updateObj)
-                    continue;
-            }
 
             objToUpdate.insert(obj);
 
@@ -1118,12 +804,6 @@ void Map::Update(const uint32& t_diff)
     for (auto wObj : objToUpdate)
     {
         wObj->Update(t_diff);
-        // update visibility of far visible objects
-        if (wObj->GetVisibilityData().GetVisibilityDistance() > GetVisibilityDistance() && !urand(0, 4))
-        {
-            wObj->GetViewPoint().Call_UpdateVisibilityForOwner();
-            wObj->UpdateObjectVisibility();
-        }
         ++count;
     }
 
@@ -1209,12 +889,7 @@ void Map::Remove(Player* player, bool remove)
     SendRemoveTransports(player);
     UpdateObjectVisibility(player, cell, p);
 
-#ifdef ENABLE_PLAYERBOTS
-    if (!player->GetPlayerbotAI())
-        player->ResetMap();
-#else
     player->ResetMap();
-#endif
     if (remove)
         DeleteFromWorld(player);
 }
@@ -1248,7 +923,7 @@ void Map::Remove(T* obj, bool remove)
     UpdateObjectVisibility(obj, cell, p);                   // i think will be better to call this function while object still in grid, this changes nothing but logically is better(as for me)
     RemoveFromGrid(obj, grid, cell);
 
-    //m_objRemoveList.insert(obj->GetObjectGuid());
+    m_objRemoveList.insert(obj->GetObjectGuid());
 
     if (remove)
         // if option set then object already saved at this moment
@@ -1279,26 +954,20 @@ void Map::PlayerRelocation(Player* player, float x, float y, float z, float orie
         DEBUG_FILTER_LOG(LOG_FILTER_PLAYER_MOVES, "Player %s relocation grid[%u,%u]cell[%u,%u]->grid[%u,%u]cell[%u,%u]", player->GetName(), old_cell.GridX(), old_cell.GridY(), old_cell.CellX(), old_cell.CellY(), new_cell.GridX(), new_cell.GridY(), new_cell.CellX(), new_cell.CellY());
 
         NGridType* oldGrid = getNGrid(old_cell.GridX(), old_cell.GridY());
-        if (oldGrid)
-        {
-            RemoveFromGrid(player, oldGrid, old_cell);
-            if (!old_cell.DiffGrid(new_cell))
-                AddToGrid(player, oldGrid, new_cell);
-            else
-                EnsureGridLoadedAtEnter(new_cell, player);
-        }
+        RemoveFromGrid(player, oldGrid, old_cell);
+        if (!old_cell.DiffGrid(new_cell))
+            AddToGrid(player, oldGrid, new_cell);
+        else
+            EnsureGridLoadedAtEnter(new_cell, player);
 
         NGridType* newGrid = getNGrid(new_cell.GridX(), new_cell.GridY());
-        if (newGrid)
-        {
-            player->GetViewPoint().Event_GridChanged(&(*newGrid)(new_cell.CellX(), new_cell.CellY()));
-        }
+        player->GetViewPoint().Event_GridChanged(&(*newGrid)(new_cell.CellX(), new_cell.CellY()));
     }
 
     player->OnRelocated();
 
     NGridType* newGrid = getNGrid(new_cell.GridX(), new_cell.GridY());
-    if (newGrid && !same_cell && newGrid->GetGridState() != GRID_STATE_ACTIVE)
+    if (!same_cell && newGrid->GetGridState() != GRID_STATE_ACTIVE)
     {
         ResetGridExpiry(*newGrid, 0.1f);
         newGrid->SetGridState(GRID_STATE_ACTIVE);
@@ -1495,10 +1164,7 @@ void Map::UpdateObjectVisibility(WorldObject* obj, Cell cell, const CellPair& ce
     cell.Visit(cellpair, player_notifier, *this, *obj, obj->GetVisibilityData().GetVisibilityDistance());
     for (auto guid : notifier.GetUnvisitedGuids())
         if (Player* player = GetPlayer(guid))
-#ifdef ENABLE_PLAYERBOTS
-            if (player->isRealPlayer())
-#endif
-                player->UpdateVisibilityOf(player->GetCamera().GetBody(), obj);
+            player->UpdateVisibilityOf(player->GetCamera().GetBody(), obj);
 }
 
 void Map::SendInitSelf(Player* player) const
@@ -1615,6 +1281,7 @@ void Map::AddObjectToRemoveList(WorldObject* obj)
     MANGOS_ASSERT(obj->GetMapId() == GetId() && obj->GetInstanceId() == GetInstanceId());
 
     obj->CleanupsBeforeDelete();                            // remove or simplify at least cross referenced links
+
     i_objectsToRemove.insert(obj);
     // DEBUG_LOG("Object (GUID: %u TypeId: %u ) added to removing list.",obj->GetGUIDLow(),obj->GetTypeId());
 }
@@ -1628,7 +1295,6 @@ void Map::RemoveAllObjectsInRemoveList()
     while (!i_objectsToRemove.empty())
     {
         WorldObject* obj = *i_objectsToRemove.begin();
-
         i_objectsToRemove.erase(i_objectsToRemove.begin());
 
         switch (obj->GetTypeId())
@@ -2208,7 +1874,6 @@ BattleGroundMap::BattleGroundMap(uint32 id, time_t expiry, uint32 InstanceId, ui
 
 BattleGroundMap::~BattleGroundMap()
 {
-    UnloadAll(true);
 }
 
 void BattleGroundMap::Initialize(bool)
@@ -2218,9 +1883,6 @@ void BattleGroundMap::Initialize(bool)
 
 void BattleGroundMap::Update(const uint32& diff)
 {
-    if (!GetBG())
-        return;
-
     Map::Update(diff);
 
     if (!m_bg->GetPlayersSize())
@@ -2550,7 +2212,6 @@ void Map::SendObjectUpdates()
     while (!i_objectsToClientUpdate.empty())
     {
         Object* obj = *i_objectsToClientUpdate.begin();
-
         i_objectsToClientUpdate.erase(i_objectsToClientUpdate.begin());
         obj->BuildUpdateData(update_players);
     }
@@ -3328,224 +2989,3 @@ void Map::SetZoneOverrideLight(uint32 zoneId, uint32 areaId, uint32 lightId, uin
         }
     }
 }
-
-//Start Solocraft Subfunctions
-//Set the instance difficulty
-int Map::CalculateDifficulty(Map* map, Player* /*player*/)
-{
-    //float difficulty = 0.0;//changed from 1.0
-    if (map)
-    {
-        if (map->IsBattleGroundOrArena())
-            return 0;
-
-        //25 Man raids
-        if (diff_Multiplier.find(map->GetId()) == diff_Multiplier.end())
-        {
-            if (map->IsRaid()) {
-                return D25; //map not found returns the catch all value
-            }
-            else
-                return diff_Multiplier[map->GetId()]; //return the specific dungeon's level
-        }
-        if (map->GetDifficulty() == DUNGEON_DIFFICULTY_HEROIC)
-        {
-            //Heroic Dungeons
-            if (diff_Multiplier_Heroics.find(map->GetId()) == diff_Multiplier_Heroics.end()) {
-                return D10; //map not found returns the catch all value
-            }
-            else
-                return diff_Multiplier_Heroics[map->GetId()]; //return the specific dungeon's level
-        }
-        if (diff_Multiplier.find(map->GetId()) == diff_Multiplier.end()) {
-            //Catch Alls  ----------------------5 Dungeons and 40 Raids
-            if (map->IsDungeon()) {
-                return D5;
-            }
-            else if (map->IsRaid()) {
-                return D40;
-            }
-        }
-        else
-            return diff_Multiplier[map->GetId()]; //return the specific dungeon's level
-    }
-    return 0; //return 0
-}
-
-//Set the Dungeon Level
-int Map::CalculateDungeonLevel(Map* map, Player* /*player*/)
-{
-    if (dungeons.find(map->GetId()) == dungeons.end())
-    {
-        return SolocraftDungeonLevel; //map not found returns the catch all value
-    }
-    else
-        return dungeons[map->GetId()]; //return the specific dungeon's level
-}
-
-//Get the group's size
-int Map::GetNumInGroup(Player* player)
-{
-    int numInGroup = 1;
-    Group* group = player->GetGroup();
-    if (group) {
-        Group::MemberSlotList const& groupMembers = group->GetMemberSlots();
-        numInGroup = groupMembers.size();
-    }
-    return numInGroup;
-}
-
-void Map::ApplyBuffs(Player* player, Map* map, float difficulty, int dunLevel, int numInGroup)
-{
-    int SpellPowerBonus = 0;
-    //Check whether to buff the player or check to debuff back to normal
-    if (difficulty != 0)
-    {
-        std::ostringstream ss;
-        if (player->GetLevel() <= dunLevel + SolocraftLevelDiff) //If a player is too high level for dungeon don't buff but if in a group will count towards the group offset balancing.
-        {
-            //Get Current members total difficulty offset and if it exceeds the difficulty offset of the dungeon then debuff new group members coming in until all members leave and re-enter. This happens when a player already inside dungeon invite others to the group but the player already has the full difficulty offset.
-            float GroupDifficulty = GetGroupDifficulty(player);
-            //Check to either debuff or buff player entering dungeon.  Debuff must be enabled in Config
-            if (GroupDifficulty >= difficulty && SoloCraftDebuffEnable == 1)
-            {
-                //Current dungeon offset exceeded - Debuff player
-                difficulty = (-abs(difficulty)) + (difficulty / numInGroup);
-                difficulty = roundf(difficulty * 100) / 100; //Float variables suck
-
-                //sLog->outError("%u: would have this difficulty: %f", player->GetGUID(), tempDiff);
-            }
-            else
-            {
-                //Current Dungeon offset not exceeded - Buff player
-                //Group difficulty adjustment
-                difficulty = difficulty / numInGroup;
-                difficulty = roundf(difficulty * 100) / 100; //Float variables suck - two decimal rounding
-            }
-
-            //Check Database for a current dungeon entry
-            auto result = CharacterDatabase.PQuery("SELECT `GUID`, `Difficulty`, `GroupSize`, `SpellPower`, `Stats` FROM `custom_solocraft_character_stats` WHERE GUID = %u", player->GetGUIDLow());
-
-            //Modify Player Stats
-            for (int32 i = STAT_STRENGTH; i < MAX_STATS; ++i) //STATS defined/enum in SharedDefines.h
-            {
-                if (result)
-                {
-                    player->HandleStatModifier(UnitMods(UNIT_MOD_STAT_START + i), TOTAL_VALUE, (*result)[1].GetFloat() * (*result)[4].GetFloat(), false);
-                }
-                // Buff the player
-                player->HandleStatModifier(UnitMods(UNIT_MOD_STAT_START + i), TOTAL_VALUE, difficulty * SoloCraftStatsMult, true); //Unitmods enum UNIT_MOD_STAT_START defined in Unit.h line 391
-            }
-            // Set player health
-            player->SetFullHealth();//defined in Unit.h line 1524
-            //Spellcaster Stat modify
-            if (player->GetPowerType() == POWER_MANA)
-            {
-                // Buff the player's mana
-                player->SetPower(POWER_MANA, player->GetMaxPower(POWER_MANA));
-
-                //Check for Dungeon to Dungeon Transfer and remove old Spellpower buff
-                if (result)
-                {
-                    // remove spellpower bonus
-                    player->ApplySpellPowerBonus((*result)[3].GetUInt32() * (*result)[4].GetFloat(), false);
-                }
-
-                //Buff Spellpower
-                if (difficulty > 0) //Debuffed characters do not get spellpower
-                {
-                    SpellPowerBonus = static_cast<int>((player->GetLevel() * SoloCraftSpellMult) * difficulty);//Yes, I pulled this calc out of my butt.
-                    player->ApplySpellPowerBonus(SpellPowerBonus, true);
-                    //sLog->outError("%u: spellpower Bonus applied: %i", player->GetGUID(), SpellPowerBonus);
-                }
-            }
-            //Announcements
-            if (difficulty > 0)
-            {
-                // Announce to player - Buff
-                ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " entered %s  - Difficulty Offset: %0.2f. Spellpower Bonus: %i";
-                ChatHandler(player->GetSession()).PSendSysMessage(ss.str().c_str(), map->GetMapName(), difficulty, SpellPowerBonus);
-            }
-            else
-            {
-                // Announce to player - Debuff
-                ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " entered %s  - |cffFF0000BE ADVISED - You have been debuffed by offset: %0.2f. |cffFF8000 A group member already inside has the dungeon's full buff offset.  No Spellpower buff will be applied to spell casters.  ALL group members must exit the dungeon and re-enter to receive a balanced offset.";
-                ChatHandler(player->GetSession()).PSendSysMessage(ss.str().c_str(), map->GetMapName(), difficulty);
-            }
-            // Save Player Dungeon Offsets to Database
-            CharacterDatabase.PExecute("REPLACE INTO custom_solocraft_character_stats (GUID, Difficulty, GroupSize, SpellPower, Stats) VALUES (%u, %f, %u, %i, %f)", player->GetGUIDLow(), difficulty, numInGroup, SpellPowerBonus, SoloCraftStatsMult);
-        }
-        else
-        {
-            // Announce to player - Over Max Level Threshold
-            ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " entered %s  - |cffFF0000You have not been buffed. |cffFF8000 Your level is higher than the max level (%i) threshold for this dungeon.";
-            ChatHandler(player->GetSession()).PSendSysMessage(ss.str().c_str(), map->GetMapName(), dunLevel + SolocraftLevelDiff);
-            ClearBuffs(player, map); //Check to revert player back to normal
-        }
-
-    }
-    else
-    {
-        ClearBuffs(player, map); //Check to revert player back to normal - Moving this here fixed logout and login while in instance buff and debuff issues
-    }
-}
-
-// Get the current group members GUIDS and return the total sum of the difficulty offset by all group members currently in the dungeon
-float Map::GetGroupDifficulty(Player* player)
-{
-    float GroupDifficulty = 0.0;
-    Group* group = player->GetGroup();
-    if (group)
-    {
-        Group::MemberSlotList const& groupMembers = group->GetMemberSlots();
-        for (Group::member_citerator itr = groupMembers.begin(); itr != groupMembers.end(); ++itr)
-        {
-            //Exclude player from the tally because the player is the one entering the dungeon
-            if (itr->guid != player->GetGUIDLow())
-            {
-                //Database query to find difficulty for each group member that is currently in an instance
-                auto result = CharacterDatabase.PQuery("SELECT `GUID`, `Difficulty`, `GroupSize` FROM `custom_solocraft_character_stats` WHERE GUID = %u", itr->guid);
-                if (result)
-                {
-                    //Test for debuffs already give to other members - They cannot be used to determine the total offset because negative numbers will skew the total difficulty offset
-                    if ((*result)[1].GetFloat() > 0)
-                    {
-                        GroupDifficulty = GroupDifficulty + (*result)[1].GetFloat();
-                        //sLog->outError("%u : Group member GUID in instance: %u", player->GetGUID(), itr->guid);
-                    }
-                }
-            }
-        }
-    }
-    return GroupDifficulty;
-}
-
-void Map::ClearBuffs(Player* player, Map* map)
-{
-    //Database query to get offset from the last instance player exited
-    auto result = CharacterDatabase.PQuery("SELECT `GUID`, `Difficulty`, `GroupSize`, `SpellPower`, `Stats` FROM `custom_solocraft_character_stats` WHERE GUID = %u", player->GetGUIDLow());
-    if (result)
-    {
-        float difficulty = (*result)[1].GetFloat();
-        int SpellPowerBonus = (*result)[3].GetUInt32();
-        float StatsMultPct = (*result)[4].GetFloat();
-        //sLog->outError("Map difficulty: %f", difficulty);
-        // Inform the player
-        std::ostringstream ss;
-        ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " exited to %s - Reverting Difficulty Offset: %0.2f. Spellpower Bonus Removed: %i";
-        ChatHandler(player->GetSession()).PSendSysMessage(ss.str().c_str(), map->GetMapName(), difficulty, SpellPowerBonus);
-        // Clear the buffs
-        for (int32 i = STAT_STRENGTH; i < MAX_STATS; ++i)
-        {
-            player->HandleStatModifier(UnitMods(UNIT_MOD_STAT_START + i), TOTAL_VALUE, difficulty * StatsMultPct, false);
-        }
-        if (player->GetPowerType() == POWER_MANA && difficulty > 0)
-        {
-            // remove spellpower bonus
-            player->ApplySpellPowerBonus(SpellPowerBonus, false);
-        }
-        //Remove database entry as the player is no longer in an instance
-        CharacterDatabase.PExecute("DELETE FROM custom_solocraft_character_stats WHERE GUID = %u", player->GetGUIDLow());
-    }
-}
-//End Solocraft Subfunctions

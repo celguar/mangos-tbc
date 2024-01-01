@@ -179,8 +179,6 @@ enum AccountFlags
     ACCOUNT_FLAG_SILENCED       = 0x02,
     ACCOUNT_FLAG_SHOW_ANTISPAM  = 0x04,
     ACCOUNT_FLAG_HIDDEN         = 0x08,
-    ACCOUNT_FLAG_COLLECTOR_CLASSIC = 0x10,
-    ACCOUNT_FLAG_COLLECTOR_TBC     = 0x20,
 };
 
 // class to deal with packet processing
@@ -275,12 +273,7 @@ class WorldSession
         // Players connected without socket are bot
         const std::string GetRemoteAddress() const { return m_Socket ? m_Socket->GetRemoteAddress() : "disconnected/bot"; }
 #else
-#ifdef ENABLE_PLAYERBOTS
-        // Players connected without socket are bot
-        const std::string GetRemoteAddress() const { return m_Socket ? m_Socket->GetRemoteAddress() : "disconnected/bot"; }
-#else
         const std::string GetRemoteAddress() const { return m_Socket ? m_Socket->GetRemoteAddress() : "disconnected"; }
-#endif
 #endif
         const std::string& GetLocalAddress() const { return m_localAddress; }
 
@@ -294,9 +287,6 @@ class WorldSession
         SessionAnticheatInterface* GetAnticheat() const { return m_anticheat.get(); }
 
 #ifdef BUILD_PLAYERBOT
-        void SetNoAnticheat();
-#endif
-#ifdef ENABLE_PLAYERBOTS
         void SetNoAnticheat();
 #endif
 
@@ -476,7 +466,6 @@ class WorldSession
         // Misc
         void SendKnockBack(Unit* who, float angle, float horizontalSpeed, float verticalSpeed);
         void SendPlaySpellVisual(ObjectGuid guid, uint32 spellArtKit) const;
-        void SendTeleportToObservers(float x, float y, float z, float orientation);
 
         void SendAuthOk() const;
         void SendAuthQueued() const;
@@ -911,11 +900,6 @@ class WorldSession
 
         // Warden
         void HandleWardenDataOpcode(WorldPacket& recv_data);
-
-#ifdef ENABLE_PLAYERBOTS
-        // Playerbots
-        void HandleBotPackets();
-#endif
 
         // Movement
         void SynchronizeMovement(MovementInfo &movementInfo);

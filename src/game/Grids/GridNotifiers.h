@@ -89,14 +89,6 @@ namespace MaNGOS
         template<class SKIP> void Visit(GridRefManager<SKIP>&) {}
     };
 
-    struct ObjectThreatMessageDeliverer
-    {
-        std::string const& i_message;
-        explicit ObjectThreatMessageDeliverer(std::string const& msg) : i_message(msg) {}
-        void Visit(CameraMapType& m);
-        template<class SKIP> void Visit(GridRefManager<SKIP>&) {}
-    };
-
     struct MessageDistDeliverer
     {
         Player const& i_player;
@@ -319,21 +311,6 @@ namespace MaNGOS
         GameObjectListSearcher(GameObjectList& objects, Check& check) : i_objects(objects), i_check(check) {}
 
         void Visit(GameObjectMapType& m);
-
-        template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
-    };
-
-    // Dynamicobject searchers
-
-    template<class Check>
-    struct DynamicObjectListSearcher
-    {
-        DynamicObjectList& i_objects;
-        Check& i_check;
-
-        DynamicObjectListSearcher(DynamicObjectList& objects, Check& check) : i_objects(objects), i_check(check) {}
-
-        void Visit(DynamicObjectMapType& m);
 
         template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
     };

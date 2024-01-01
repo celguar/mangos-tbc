@@ -101,11 +101,6 @@ class ChatHandler
 
         bool HasSentErrorMessage() const { return sentErrorMessage;}
 
-#ifdef ENABLE_PLAYERBOTS
-        WorldSession* GetSession() { return m_session; }
-        bool HandlePerfMonCommand(char* args);
-#endif
-
         /**
         * \brief Prepare SMSG_GM_MESSAGECHAT/SMSG_MESSAGECHAT
         *
@@ -208,7 +203,6 @@ class ChatHandler
         bool HandleAccountSetAddonCommand(char* args);
         bool HandleAccountSetGmLevelCommand(char* args);
         bool HandleAccountSetPasswordCommand(char* args);
-        bool HandleAccountSetEditionCommand(char* args);
 
 #ifdef BUILD_AHBOT
         bool HandleAHBotRebuildCommand(char* args);
@@ -392,7 +386,6 @@ class ChatHandler
         bool HandleLearnAllMyClassCommand(char* args);
         bool HandleLearnAllMySpellsCommand(char* args);
         bool HandleLearnAllMyTalentsCommand(char* args);
-        bool HandleLearnAllMyLevelCommand(char* args);
 
         bool HandleListAreaTriggerCommand(char* args);
         bool HandleListAurasCommand(char* args);
@@ -771,13 +764,6 @@ class ChatHandler
         bool HandlePlayerbotCommand(char* args);
 #endif
 
-#ifdef ENABLE_PLAYERBOTS
-        bool HandlePlayerbotCommand(char* args);
-        bool HandleRandomPlayerbotCommand(char* args);
-        bool HandleAhBotCommand(char* args);
-        bool HandleGuildTaskCommand(char* args);
-#endif
-
         bool HandleArenaFlushPointsCommand(char* args);
         bool HandleArenaSeasonRewardsCommand(char* args);
         bool HandleArenaDataReset(char* args);
@@ -790,7 +776,6 @@ class ChatHandler
         bool HandleMmap(char* args);
         bool HandleMmapTestArea(char* args);
         bool HandleMmapTestHeight(char* args);
-        bool HandleMmapDemoApp(char* args);
 
         bool HandleLinkAddCommand(char* args);
         bool HandleLinkRemoveCommand(char* args);
