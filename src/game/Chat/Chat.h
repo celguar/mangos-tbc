@@ -530,6 +530,7 @@ class ChatHandler
         bool HandleReloadAllLootCommand(char* args);
         bool HandleReloadAllNpcCommand(char* args);
         bool HandleReloadAllQuestCommand(char* args);
+        bool HandleReloadAutoBroadcastCommand(char* args);
         bool HandleReloadAllScriptsCommand(char* args);
         bool HandleReloadAllEventAICommand(char* args);
         bool HandleReloadAllSpellCommand(char* args);
