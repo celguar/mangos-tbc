@@ -2859,7 +2859,7 @@ void Player::GiveLevel(uint32 level)
     GetSession()->SetCurrentPlayerLevel(level);
     SendQuestGiverStatusMultiple();
 
-    uint32 cap = sWorld.GetExperienceCapForLevel(getLevel(), m_team);
+    uint32 cap = sWorld.GetExperienceCapForLevel(GetLevel(), m_team);
     if (cap < m_experienceModifier)
     {
         SetPlayerXPModifier(cap);
@@ -15790,19 +15790,17 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
     _LoadCreatedInstanceTimers();
 
     // voa only custom code
-    result = CharacterDatabase.PQuery("SELECT value FROM character_settings WHERE guid = %u AND id = %u", GetGUIDLow(), PLAYER_SETTING_XP_MODIFIER);
-    if (result)
+    auto QueryResult = CharacterDatabase.PQuery("SELECT value FROM character_settings WHERE guid = %u AND id = %u", GetGUIDLow(), PLAYER_SETTING_XP_MODIFIER);
+    if (QueryResult)
     {
-        Field* fields = result->Fetch();
+        Field* fields = QueryResult->Fetch();
         m_experienceModifier = fields[0].GetUInt32();
-        uint32 cap = sWorld.GetExperienceCapForLevel(getLevel(), m_team);
+        uint32 cap = sWorld.GetExperienceCapForLevel(GetLevel(), m_team);
         if (m_experienceModifier > cap)
         {
             m_experienceModifier = cap;
             CharacterDatabase.PExecute("UPDATE character_settings SET value = '%u' WHERE guid = '%u' AND id = '%u'", m_experienceModifier, GetGUIDLow(), PLAYER_SETTING_XP_MODIFIER);
         }
-
-        delete result;
     }
     else
         m_experienceModifier = 1;
@@ -18537,17 +18535,16 @@ void Player::SendThreatMessageToPlayer(std::string const& message) const
 
 void Player::_SaveXPModifier()
 {
-    QueryResult* result = CharacterDatabase.PQuery("SELECT value FROM character_settings WHERE guid = %u AND id = %u", GetGUIDLow(), PLAYER_SETTING_XP_MODIFIER);
+    auto QueryResult = CharacterDatabase.PQuery("SELECT value FROM character_settings WHERE guid = %u AND id = %u", GetGUIDLow(), PLAYER_SETTING_XP_MODIFIER);
 
-    if (result)
+    if (QueryResult)
     {
-        Field* fields = result->Fetch();
+        Field* fields = QueryResult->Fetch();
         uint32 modifier = fields[0].GetUInt32();
 
         if (modifier != m_experienceModifier)
             CharacterDatabase.PExecute("UPDATE character_settings SET value = '%u' WHERE guid = '%u' AND id = '%u'", m_experienceModifier, GetGUIDLow(), PLAYER_SETTING_XP_MODIFIER);
 
-        delete result;
     }
     else
         CharacterDatabase.PExecute("INSERT INTO character_settings(guid,id,value) VALUES('%u','%u','%u')", GetGUIDLow(), PLAYER_SETTING_XP_MODIFIER, m_experienceModifier);
@@ -20931,7 +20928,7 @@ void Player::RewardSinglePlayerAtKill(Unit* pVictim)
         GiveXP(MaNGOS::XP::Gain(this, creatureVictim), creatureVictim);
 
         if (Pet* pet = GetPet())
-            pet->GivePetXP(xp * m_experienceModifier);
+            pet->GivePetXP(MaNGOS::XP::Gain(pet, creatureVictim));
 
         // normal creature (not pet/etc) can be only in !PvP case
         if (CreatureInfo const* normalInfo = creatureVictim->GetCreatureInfo())

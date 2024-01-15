@@ -317,7 +317,7 @@ bool ChatHandler::HandleXPCommandSet(char* args)
         return false;
     }
 
-    uint32 cap = sWorld.GetExperienceCapForLevel(player->getLevel(), player->GetTeam());
+    uint32 cap = sWorld.GetExperienceCapForLevel(player->GetLevel(), player->GetTeam());
     if (modifier && modifier <= cap)
     {
         player->SetPlayerXPModifier(modifier);
@@ -346,7 +346,7 @@ bool ChatHandler::HandleXPCommandAvailable(char* args)
     Player* player = m_session->GetPlayer();
 
     PSendSysMessage("Current available XP modifiers:");
-    std::array<uint32, 255> caps;
+    std::array<uint32, 70> caps;
     sWorld.GetExperienceCapArray(player->GetTeam(), caps);
 
     for (uint32 i = 1; i < MAX_LEVEL_TBC; i += 10)
