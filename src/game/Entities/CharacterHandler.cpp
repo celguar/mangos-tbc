@@ -1128,6 +1128,8 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
     if (!pCurrChar->IsStandState() && !pCurrChar->IsStunned())
         pCurrChar->SetStandState(UNIT_STAND_STATE_STAND);
 
+    pCurrChar->SendXPRateToPlayer();
+
     //Start Solocraft Functions
     bool SoloCraftEnable = sWorld.getConfig(CONFIG_BOOL_SOLOCRAFT_ENABLED);
     bool SoloCraftAnnounceModule = sWorld.getConfig(CONFIG_BOOL_SOLOCRAFT_ANNOUNCE);

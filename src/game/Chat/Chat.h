@@ -530,6 +530,7 @@ class ChatHandler
         bool HandleReloadAllLootCommand(char* args);
         bool HandleReloadAllNpcCommand(char* args);
         bool HandleReloadAllQuestCommand(char* args);
+        bool HandleReloadAutoBroadcastCommand(char* args);
         bool HandleReloadAllScriptsCommand(char* args);
         bool HandleReloadAllEventAICommand(char* args);
         bool HandleReloadAllSpellCommand(char* args);
@@ -634,6 +635,11 @@ class ChatHandler
         bool HandleSendMailCommand(char* args);
         bool HandleSendMessageCommand(char* args);
         bool HandleSendMoneyCommand(char* args);
+
+        // Custom
+        bool HandleXPCommandSet(char* args);
+        bool HandleXPCommandCurrent(char* args);
+        bool HandleXPCommandAvailable(char* args);
 
         bool HandleSendMassItemsCommand(char* args);
         bool HandleSendMassMailCommand(char* args);

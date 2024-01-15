@@ -157,6 +157,15 @@ ChatCommand* ChatHandler::getCommandTable()
         { nullptr,          0,                  false, nullptr,                                        "", nullptr }
     };
 
+        static ChatCommand xpCommandTable[] =
+    {
+        { "set",            SEC_PLAYER,         true,  &ChatHandler::HandleXPCommandSet,               "", nullptr },
+        { "current",        SEC_PLAYER,         true,  &ChatHandler::HandleXPCommandCurrent,           "", nullptr },
+        { "available",      SEC_PLAYER,         true,  &ChatHandler::HandleXPCommandAvailable,         "", nullptr },
+        { nullptr,          0,                  false, nullptr,                                        "", nullptr }
+    };
+
+
     static ChatCommand characterCommandTable[] =
     {
         { "deleted",        SEC_GAMEMASTER,     true,  nullptr,                                        "", characterDeletedCommandTable},
@@ -605,6 +614,7 @@ ChatCommand* ChatHandler::getCommandTable()
         { "all_eventai",    SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleReloadAllEventAICommand,    "", nullptr },
         { "all_gossips",    SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleReloadAllGossipsCommand,    "", nullptr },
         { "all_item",       SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleReloadAllItemCommand,       "", nullptr },
+        { "autobroadcast",  SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleReloadAutoBroadcastCommand, "", nullptr },
         { "all_locales",    SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleReloadAllLocalesCommand,    "", nullptr },
         { "all_loot",       SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleReloadAllLootCommand,       "", nullptr },
         { "all_npc",        SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleReloadAllNpcCommand,        "", nullptr },
@@ -1014,6 +1024,7 @@ ChatCommand* ChatHandler::getCommandTable()
         { "baninfo",        SEC_ADMINISTRATOR,  false, nullptr,                                        "", baninfoCommandTable  },
         { "banlist",        SEC_ADMINISTRATOR,  true,  nullptr,                                        "", banlistCommandTable  },
         { "start",          SEC_PLAYER,         false, &ChatHandler::HandleStartCommand,               "", nullptr },
+        { "xp",             SEC_PLAYER,         false, nullptr,                                        "", xpCommandTable },
         { "taxicheat",      SEC_MODERATOR,      false, &ChatHandler::HandleTaxiCheatCommand,           "", nullptr },
         { "linkgrave",      SEC_ADMINISTRATOR,  false, &ChatHandler::HandleLinkGraveCommand,           "", nullptr },
         { "neargrave",      SEC_ADMINISTRATOR,  false, &ChatHandler::HandleNearGraveCommand,           "", nullptr },

@@ -657,6 +657,8 @@ Player::Player(WorldSession* session): Unit(), m_taxiTracker(*this), m_mover(thi
 
     m_createdInstanceClearTimer = MINUTE * IN_MILLISECONDS;
 
+    m_experienceModifier = 1;
+
     m_cinematicMgr = nullptr;
 
     m_energyRegenRate = 1.f;
@@ -2740,6 +2742,8 @@ void Player::GiveXP(uint32 xp, Creature* victim, float groupRate)
     if (level >= GetMaxAttainableLevel())
         return;
 
+    xp *= m_experienceModifier;
+
     // handle SPELL_AURA_MOD_XP_PCT auras
     Unit::AuraList const& ModXPPctAuras = GetAurasByType(SPELL_AURA_MOD_XP_PCT);
     for (auto ModXPPctAura : ModXPPctAuras)
@@ -2854,6 +2858,13 @@ void Player::GiveLevel(uint32 level)
     // resend quests status directly
     GetSession()->SetCurrentPlayerLevel(level);
     SendQuestGiverStatusMultiple();
+
+    uint32 cap = sWorld.GetExperienceCapForLevel(getLevel(), m_team);
+    if (cap < m_experienceModifier)
+    {
+        SetPlayerXPModifier(cap);
+        SendXPRateToPlayer();
+    }
 }
 
 void Player::UpdateFreeTalentPoints(bool resetIfNeed)
@@ -15778,6 +15789,26 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
 
     _LoadCreatedInstanceTimers();
 
+    // voa only custom code
+    result = CharacterDatabase.PQuery("SELECT value FROM character_settings WHERE guid = %u AND id = %u", GetGUIDLow(), PLAYER_SETTING_XP_MODIFIER);
+    if (result)
+    {
+        Field* fields = result->Fetch();
+        m_experienceModifier = fields[0].GetUInt32();
+        uint32 cap = sWorld.GetExperienceCapForLevel(getLevel(), m_team);
+        if (m_experienceModifier > cap)
+        {
+            m_experienceModifier = cap;
+            CharacterDatabase.PExecute("UPDATE character_settings SET value = '%u' WHERE guid = '%u' AND id = '%u'", m_experienceModifier, GetGUIDLow(), PLAYER_SETTING_XP_MODIFIER);
+        }
+
+        delete result;
+    }
+    else
+        m_experienceModifier = 1;
+    // voa only custom code end
+
+
     return true;
 }
 
@@ -17043,6 +17074,11 @@ void Player::SaveToDB()
     _SaveNewInstanceIdTimer();
     m_reputationMgr.SaveToDB();
     GetSession()->SaveTutorialsData();                      // changed only while character in game
+
+    // voa only code
+    _SaveXPModifier();
+    // voa only code end
+
 
     CharacterDatabase.CommitTransaction();
 
@@ -18498,6 +18534,34 @@ void Player::SendThreatMessageToPlayer(std::string const& message) const
     if (WorldSession* session = GetSession())
         session->SendPacket(data);
 }
+
+void Player::_SaveXPModifier()
+{
+    QueryResult* result = CharacterDatabase.PQuery("SELECT value FROM character_settings WHERE guid = %u AND id = %u", GetGUIDLow(), PLAYER_SETTING_XP_MODIFIER);
+
+    if (result)
+    {
+        Field* fields = result->Fetch();
+        uint32 modifier = fields[0].GetUInt32();
+
+        if (modifier != m_experienceModifier)
+            CharacterDatabase.PExecute("UPDATE character_settings SET value = '%u' WHERE guid = '%u' AND id = '%u'", m_experienceModifier, GetGUIDLow(), PLAYER_SETTING_XP_MODIFIER);
+
+        delete result;
+    }
+    else
+        CharacterDatabase.PExecute("INSERT INTO character_settings(guid,id,value) VALUES('%u','%u','%u')", GetGUIDLow(), PLAYER_SETTING_XP_MODIFIER, m_experienceModifier);
+}
+
+void Player::SendXPRateToPlayer()
+{
+    std::string xpLine = "Current XP rate:" + std::to_string(m_experienceModifier) + "\n";
+    WorldPacket data;
+    ChatHandler::BuildChatPacket(data, CHAT_MSG_SYSTEM, xpLine.data(), LANG_UNIVERSAL, CHAT_TAG_NONE, GetObjectGuid());
+    if (WorldSession* session = GetSession())
+        session->SendPacket(data);
+}
+
 
 // send Proficiency
 void Player::SendProficiency(ItemClass itemClass, uint32 itemSubclassMask) const
@@ -20867,7 +20931,7 @@ void Player::RewardSinglePlayerAtKill(Unit* pVictim)
         GiveXP(MaNGOS::XP::Gain(this, creatureVictim), creatureVictim);
 
         if (Pet* pet = GetPet())
-            pet->GivePetXP(MaNGOS::XP::Gain(pet, creatureVictim));
+            pet->GivePetXP(xp * m_experienceModifier);
 
         // normal creature (not pet/etc) can be only in !PvP case
         if (CreatureInfo const* normalInfo = creatureVictim->GetCreatureInfo())

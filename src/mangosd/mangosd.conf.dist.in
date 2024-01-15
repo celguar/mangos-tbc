@@ -804,6 +804,12 @@ LogColors = ""
 #    Event.Announce
 #        Default: 0 (false)
 #                 1 (true)
+#    AutoBroadcast
+#        Timer interval (in seconds) for automatic server announcements (autobroadcasts). Zero = Disabled
+#                   0 (AB is disabled)
+#        Default: 600 (AB every 10 minutes)
+#                   N (>0, AB every N seconds)
+#
 #
 #    BeepAtStart
 #        Beep at mangosd start finished (mostly work only at Unix/Linux systems)
@@ -902,6 +908,7 @@ BeepAtStart = 1
 ShowProgressBars = 0
 WaitAtStartupError = 0
 Motd = "Welcome to the Continued Massive Network Game Object Server."
+AutoBroadcast = 0
 PlayerCommands = 1
 
 ###################################################################################################################

@@ -208,6 +208,7 @@ enum eConfigUInt32Values
     CONFIG_UINT32_MAX_RECRUIT_A_FRIEND_BONUS_PLAYER_LEVEL_DIFFERENCE,
     CONFIG_UINT32_SUNSREACH_COUNTER,
     //Start Solocraft Defines
+    CONFIG_UINT32_AUTOBROADCAST_INTERVAL,
     //Level Thresholds
     CONFIG_UINT32_SOLOCRAFT_MAX_LEVEL_DIFF,
     //Default Instance Level
@@ -600,6 +601,8 @@ enum RealmZone
     REALM_ZONE_CN5_8         = 37                           // basic-Latin at create, any at login
 };
 
+#define MAX_PLAYER_LEVEL 70
+
 /// Storage class for commands issued for delayed execution
 struct CliCommandHolder
 {
@@ -782,6 +785,9 @@ class World
 
         std::vector<std::string> GetSpamRecords() const { return m_spamRecords; }
 
+        void LoadBroadcastStrings();
+
+
         /**
         * \brief: force all client to request player data
         * \param: ObjectGuid guid : guid of the specified player
@@ -815,6 +821,11 @@ class World
         GraveyardManager& GetGraveyardManager() { return m_graveyardManager; }
 
         void SendGMTextFlags(uint32 accountFlag, int32 stringId, std::string type, const char* message);
+
+        // Custom
+        uint32 GetExperienceCapForLevel(uint32 level, Team team);
+        void GetExperienceCapArray(Team team, std::array<uint32, MAX_PLAYER_LEVEL>& capArray);
+
     protected:
         void _UpdateGameTime();
         // callback for UpdateRealmCharacters
@@ -830,6 +841,7 @@ class World
         void ResetDailyQuests();
         void ResetWeeklyQuests();
         void ResetMonthlyQuests();
+        void LoadExperienceBrackets();
 #ifdef BUILD_METRICS
         void GeneratePacketMetrics(); // thread safe due to atomics
         uint32 GetAverageLatency() const;
@@ -930,7 +942,23 @@ class World
         static uint32 m_maxDiff;
         static std::list<uint32> m_histDiff;
 
+        // Custom
+        // Map of counts of given group
+        std::array<std::array<uint32, MAX_PLAYER_LEVEL>, 2> m_experienceBrackets;
+
         Messager<World> m_messager;
+
+        // AutoBroadcast system
+        void AutoBroadcast();
+        struct BroadcastString
+        {
+            uint32 freq;
+            std::string text;
+        };
+        std::vector<BroadcastString> m_broadcastList;
+        uint32 m_broadcastWeight;
+        bool m_broadcastEnable;
+        IntervalTimer m_broadcastTimer;
 
         // Opcode logging
         std::vector<std::atomic<uint32>> m_opcodeCounters;
