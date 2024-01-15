@@ -2656,20 +2656,21 @@ void World::LoadEventGroupChosen()
 
 void World::LoadExperienceBrackets()
 {
-    auto QueryResult = CharacterDatabase.Query("SELECT low, high, team, value FROM experience_bracket_cap");
-    if (QueryResult)
+    QueryResult* result = CharacterDatabase.Query("SELECT low, high, team, value FROM experience_bracket_cap");
+    if (result)
     {
         do
         {
-            Field* fields = QueryResult->Fetch();
+            Field* fields = result->Fetch();
             uint32 low = fields[0].GetUInt32();
             uint32 high = fields[1].GetUInt32();
             uint32 team = fields[2].GetUInt32();
             uint32 value = fields[3].GetUInt32();
             for (; low <= high; low++)
                 m_experienceBrackets[team][low] = value;
-        } while (QueryResult->NextRow());
-;
+        } while (result->NextRow());
+
+        delete result;
     }
 }
 
