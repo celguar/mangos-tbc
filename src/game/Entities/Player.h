@@ -830,6 +830,12 @@ enum PlayerRestState
     REST_STATE_RAF_LINKED       = 0x04                      // Exact use unknown
 };
 
+enum PlayerSettings
+{
+    PLAYER_SETTING_XP_MODIFIER = 1,
+};
+
+
 class PlayerTaxi
 {
     public:
@@ -2314,6 +2320,13 @@ class Player : public Unit
         void SetTitle(uint32 titleId, bool lost = false);
         void SetTitle(CharTitlesEntry const* title, bool lost = false, bool send = true);
 
+        // XP boost system
+        uint32 GetPlayerXPModifier() { return m_experienceModifier; }
+        void SetPlayerXPModifier(uint32 modifier) { m_experienceModifier = modifier; }
+        void _SaveXPModifier();
+        void SendXPRateToPlayer();
+
+
         void SendMessageToPlayer(std::string const& message) const; // debugging purposes
         void SendThreatMessageToPlayer(std::string const& message) const; // debugging purposes
 
@@ -2724,6 +2737,8 @@ class Player : public Unit
 
         std::unordered_map<uint32, TimePoint> m_enteredInstances;
         uint32 m_createdInstanceClearTimer;
+
+        uint32 m_experienceModifier; // XP Boost
 
         std::map<uint32, ObjectGuid> m_followAngles;
 

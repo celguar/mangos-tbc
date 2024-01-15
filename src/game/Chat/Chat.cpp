@@ -157,6 +157,15 @@ ChatCommand* ChatHandler::getCommandTable()
         { nullptr,          0,                  false, nullptr,                                        "", nullptr }
     };
 
+        static ChatCommand xpCommandTable[] =
+    {
+        { "set",            SEC_PLAYER,         true,  &ChatHandler::HandleXPCommandSet,               "", nullptr },
+        { "current",        SEC_PLAYER,         true,  &ChatHandler::HandleXPCommandCurrent,           "", nullptr },
+        { "available",      SEC_PLAYER,         true,  &ChatHandler::HandleXPCommandAvailable,         "", nullptr },
+        { nullptr,          0,                  false, nullptr,                                        "", nullptr }
+    };
+
+
     static ChatCommand characterCommandTable[] =
     {
         { "deleted",        SEC_GAMEMASTER,     true,  nullptr,                                        "", characterDeletedCommandTable},
@@ -1015,6 +1024,7 @@ ChatCommand* ChatHandler::getCommandTable()
         { "baninfo",        SEC_ADMINISTRATOR,  false, nullptr,                                        "", baninfoCommandTable  },
         { "banlist",        SEC_ADMINISTRATOR,  true,  nullptr,                                        "", banlistCommandTable  },
         { "start",          SEC_PLAYER,         false, &ChatHandler::HandleStartCommand,               "", nullptr },
+        { "xp",             SEC_PLAYER,         false, nullptr,                                        "", xpCommandTable },
         { "taxicheat",      SEC_MODERATOR,      false, &ChatHandler::HandleTaxiCheatCommand,           "", nullptr },
         { "linkgrave",      SEC_ADMINISTRATOR,  false, &ChatHandler::HandleLinkGraveCommand,           "", nullptr },
         { "neargrave",      SEC_ADMINISTRATOR,  false, &ChatHandler::HandleNearGraveCommand,           "", nullptr },
