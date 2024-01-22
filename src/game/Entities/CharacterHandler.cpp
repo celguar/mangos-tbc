@@ -139,7 +139,6 @@ void PlayerbotHolder::HandlePlayerBotLoginCallback(QueryResult* dummy, SqlQueryH
     }
 
     bot->RemovePlayerbotMgr();
-
     sRandomPlayerbotMgr.OnPlayerLogin(bot);
 
     bool allowed = false;
