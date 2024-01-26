@@ -1860,6 +1860,10 @@ void World::Update(uint32 diff)
     sRandomPlayerbotMgr.UpdateSessions(diff);
 #endif
 
+#ifdef ENABLE_IMMERSIVE
+    sImmersive.Update(diff);
+#endif
+
     /// <li> Handle session updates
 #ifdef BUILD_METRICS
     auto preSessionTime = std::chrono::time_point_cast<std::chrono::milliseconds>(Clock::now());
