@@ -83,6 +83,11 @@
 #include "RandomPlayerbotMgr.h"
 #endif
 
+#ifdef ENABLE_IMMERSIVE
+#include "ImmersiveConfig.h"
+#include "Immersive.h"
+#endif
+
 #include "Metric/Metric.h"
 #include "Maps/TransportMgr.h"
 
@@ -1064,6 +1069,10 @@ void World::SetInitialWorldSettings()
     ///- Remove the bones (they should not exist in DB though) and old corpses after a restart
     CharacterDatabase.PExecute("DELETE FROM corpse WHERE corpse_type = '0' OR time < (" _UNIXTIME_ "-'%u')", 3 * DAY);
 
+#ifdef ENABLE_IMMERSIVE
+    sImmersive.Init();
+#endif
+
     /// load spell_dbc first! dbc's need them
     sLog.outString("Loading spell_template...");
     sObjectMgr.LoadSpellTemplate();
@@ -1610,6 +1619,11 @@ void World::SetInitialWorldSettings()
 #ifdef ENABLE_PLAYERBOTS
     sPlayerbotAIConfig.Initialize();
 #endif
+
+#ifdef ENABLE_IMMERSIVE
+    sImmersiveConfig.Initialize();
+#endif
+
     sTransmogrification->LoadConfig(false);
     CharacterDatabase.Execute("DELETE FROM custom_transmogrification WHERE NOT EXISTS (SELECT 1 FROM item_instance WHERE item_instance.guid = custom_transmogrification.GUID)");
 #ifdef PRESETS
@@ -1799,6 +1813,10 @@ void World::Update(uint32 diff)
 #endif
     sRandomPlayerbotMgr.UpdateAI(diff);
     sRandomPlayerbotMgr.UpdateSessions(diff);
+#endif
+
+#ifdef ENABLE_IMMERSIVE
+    sImmersive.Update(diff);
 #endif
 
     /// <li> Handle session updates

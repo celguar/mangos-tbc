@@ -334,6 +334,11 @@ if(NOT BUILD_GAME_SERVER AND BUILD_IKE3_BOTS)
   message(STATUS "BUILD_PLAYERBOTS forced to OFF due to BUILD_GAME_SERVER is not set")
 endif()
 
+if(NOT BUILD_GAME_SERVER AND BUILD_IMMERSIVE)
+	set(BUILD_IMMERSIVE OFF)
+    message(STATUS "BUILD_IMMERSIVE forced to OFF due to BUILD_GAME_SERVER is not set")
+endif()
+
 if(BUILD_IKE3_BOTS)
   set(BUILD_PLAYERBOT OFF)
   message(STATUS "CMaNGOS bots DISABLED because Ike3 bots enabled")
