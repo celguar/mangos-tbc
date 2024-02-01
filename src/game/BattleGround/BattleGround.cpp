@@ -36,10 +36,6 @@
 
 #include <cstdarg>
 
-#ifdef ENABLE_ACHIEVEMENTS
-#include "AchievementsMgr.h"
-#endif
-
 namespace MaNGOS
 {
     class BattleGroundChatBuilder
@@ -937,10 +933,6 @@ void BattleGround::EndBattleGround(Team winner)
         BattleGroundQueueTypeId bgQueueTypeId = BattleGroundMgr::BgQueueTypeId(GetTypeId(), GetArenaType());
         sBattleGroundMgr.BuildBattleGroundStatusPacket(data, this, plr->GetBattleGroundQueueIndex(bgQueueTypeId), STATUS_IN_PROGRESS, TIME_TO_AUTOREMOVE, GetStartTime(), GetArenaType(), plr->GetBGTeam());
         plr->GetSession()->SendPacket(data);
-
-#ifdef ENABLE_ACHIEVEMENTS
-        sAchievementsMgr.OnPlayerEndBattleground(plr, winner);
-#endif
     }
 
     if (IsArena() && IsRated() && winner_arena_team && loser_arena_team)
@@ -1302,10 +1294,6 @@ void BattleGround::RemovePlayerAtLeave(ObjectGuid playerGuid, bool isOnTransport
         if (isOnTransport)
             player->TeleportToBGEntryPoint();
 
-#ifdef ENABLE_ACHIEVEMENTS
-        sAchievementsMgr.ResetAchievementCriteria(player, ACHIEVEMENT_CRITERIA_CONDITION_BG_MAP, GetMapId(), true);
-#endif
-
         DETAIL_LOG("BATTLEGROUND: Removed player %s from BattleGround.", player->GetName());
     }
 
@@ -1426,10 +1414,6 @@ void BattleGround::AddPlayer(Player* player)
         if (GetStatus() == STATUS_WAIT_JOIN)                // not started yet
             player->CastSpell(player, SPELL_PREPARATION, TRIGGERED_OLD_TRIGGERED);   // reduces all mana cost of spells.
     }
-
-#ifdef ENABLE_ACHIEVEMENTS
-    sAchievementsMgr.ResetAchievementCriteria(player, ACHIEVEMENT_CRITERIA_CONDITION_BG_MAP, GetMapId(), true);
-#endif
 
     // setup BG group membership
     PlayerAddedToBgCheckIfBgIsRunning(player);

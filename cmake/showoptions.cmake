@@ -79,12 +79,6 @@ else()
   message(STATUS "Build Immersive       : No  (default)")
 endif()
 
-if(BUILD_ACHIEVEMENTS)
-  message(STATUS "Build Achievements    : Yes")
-else()
-  message(STATUS "Build Achievements    : No  (default)")
-endif()
-
 if(BUILD_EXTRACTORS)
   message(STATUS "Build extractors      : Yes")
 else()

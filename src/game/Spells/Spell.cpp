@@ -51,10 +51,6 @@
 #include "PlayerbotAI.h"
 #endif
 
-#ifdef ENABLE_ACHIEVEMENTS
-#include "AchievementsMgr.h"
-#endif
-
 extern pEffect SpellEffects[MAX_SPELL_EFFECTS];
 
 class PrioritizeManaUnitWraper
@@ -1409,10 +1405,6 @@ void Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, TargetInfo* target, 
             return;
         }
     }
-
-#ifdef ENABLE_ACHIEVEMENTS
-    sAchievementsMgr.OnDoSpellHitOnUnit(m_caster, unit, m_spellInfo->Id);
-#endif
 
     if (traveling && m_trueCaster != unit)
     {
@@ -3376,10 +3368,6 @@ SpellCastResult Spell::cast(bool skipCheck)
     m_targets.updateTradeSlotItem();
 
     m_duration = CalculateSpellDuration(m_spellInfo, m_caster, nullptr, m_auraScript);
-
-#ifdef ENABLE_ACHIEVEMENTS
-    sAchievementsMgr.OnSpellCast(m_caster, m_targets.getUnitTarget(), m_CastItem, m_spellInfo->Id);
-#endif
 
     FillTargetMap();
 

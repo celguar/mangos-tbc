@@ -32,10 +32,6 @@
 #include "Server/SQLStorages.h"
 #include "Maps/GridDefines.h"
 
-#ifdef ENABLE_ACHIEVEMENTS
-#include "AchievementsMgr.h"
-#endif
-
 void WorldSession::SendNameQueryResponse(CharacterNameQueryResponse& response) const
 {
     // guess size
@@ -418,10 +414,6 @@ void WorldSession::HandlePageTextQueryOpcode(WorldPacket& recv_data)
 
     uint32 pageID;
     recv_data >> pageID;
-
-#ifdef ENABLE_ACHIEVEMENTS
-    sAchievementsMgr.OnPlayerHandlePageTextQuery(GetPlayer(), recv_data);
-#endif
 
     while (pageID)
     {

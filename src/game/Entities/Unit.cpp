@@ -53,9 +53,6 @@
 #include "Anticheat/Anticheat.hpp"
 #include <iomanip>
 #include <sstream>
-#include <math.h>
-#include <limits>
-#include <array>
 
 #ifdef BUILD_METRICS
  #include "Metric/Metric.h"
@@ -65,9 +62,9 @@
 #include "Immersive.h"
 #endif
 
-#ifdef ENABLE_ACHIEVEMENTS
-#include "AchievementsMgr.h"
-#endif
+#include <math.h>
+#include <limits>
+#include <array>
 
 float baseMoveSpeed[MAX_MOVE_TYPE] =
 {
@@ -1059,10 +1056,6 @@ uint32 Unit::DealDamage(Unit* dealer, Unit* victim, uint32 damage, CleanDamage c
 
     DEBUG_FILTER_LOG(LOG_FILTER_DAMAGE, "DealDamageEnd returned %d damage", damage);
 
-#ifdef ENABLE_ACHIEVEMENTS
-    sAchievementsMgr.OnUnitDealDamage(dealer, victim, health, damage);
-#endif
-
     return damage;
 }
 
@@ -1146,10 +1139,6 @@ void Unit::Kill(Unit* killer, Unit* victim, DamageEffectType damagetype, SpellEn
         else if (tapper)
             tapper->RewardSinglePlayerAtKill(victim);
     }
-
-#ifdef ENABLE_ACHIEVEMENTS
-    sAchievementsMgr.UpdateAchievementCriteria(responsiblePlayer, ACHIEVEMENT_CRITERIA_TYPE_GET_KILLING_BLOWS, 1, 0, victim);
-#endif
 
     /*
     *  Actions for the killer
@@ -1250,10 +1239,6 @@ void Unit::Kill(Unit* killer, Unit* victim, DamageEffectType damagetype, SpellEn
                     outdoorPvP->HandlePlayerKill(responsiblePlayer, playerVictim);
             }
         }
-
-#ifdef ENABLE_ACHIEVEMENTS
-        sAchievementsMgr.OnUnitKill(killer, responsiblePlayer, playerVictim);
-#endif
     }
     else                                                // Killed creature
         JustKilledCreature(killer, static_cast<Creature*>(victim), responsiblePlayer);
@@ -7244,10 +7229,6 @@ int32 Unit::DealHeal(Unit* pVictim, uint32 addhealth, SpellEntry const* spellPro
     // Script Event HealedBy
     if (pVictim->AI())
         pVictim->AI()->HealedBy(this, addhealth);
-
-#ifdef ENABLE_ACHIEVEMENTS
-    sAchievementsMgr.OnUnitDealHeal(unit, pVictim, gain, addhealth);
-#endif
 
     return gain;
 }

@@ -823,10 +823,6 @@ class ChatHandler
 
         bool HandlePetLevelLoyaltyCommand(char* args);
 
-#ifdef ENABLE_ACHIEVEMENTS
-        bool HandleAchievementsCommand(char* args);
-#endif
-
         Player*   getSelectedPlayer() const;
         Unit*     getSelectedUnit(bool self = true) const;
         Creature* getSelectedCreature() const;

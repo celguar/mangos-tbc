@@ -49,10 +49,6 @@
 #include "Immersive.h"
 #endif
 
-#ifdef ENABLE_ACHIEVEMENTS
-#include "AchievementsMgr.h"
-#endif
-
 bool QuaternionData::isUnit() const
 {
     return fabs(x * x + y * y + z * z + w * w - 1.0f) < 1e-5f;
@@ -1942,10 +1938,6 @@ void GameObject::Use(Unit* user, SpellEntry const* spellInfo)
             delete m_loot;
             m_loot = new Loot(player, this, LOOT_FISHINGHOLE);
             m_loot->ShowContentTo(player);
-
-#ifdef ENABLE_ACHIEVEMENTS
-            sAchievementsMgr.UpdateAchievementCriteria(player, ACHIEVEMENT_CRITERIA_TYPE_FISH_IN_GAMEOBJECT, GetGOInfo()->id);
-#endif
 
             return;
         }

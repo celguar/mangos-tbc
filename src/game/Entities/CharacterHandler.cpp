@@ -51,10 +51,6 @@
 #include "PlayerbotAIConfig.h"
 #endif
 
-#ifdef ENABLE_ACHIEVEMENTS
-#include "AchievementsMgr.h"
-#endif
-
 // config option SkipCinematics supported values
 enum CinematicsSkipMode
 {
@@ -732,10 +728,6 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
     m_initialZoneUpdated = false;
 
     SetOnline();
-
-#ifdef ENABLE_ACHIEVEMENTS
-    sAchievementsMgr.OnPlayerLogin(pCurrChar, playerGuid.GetCounter());
-#endif
 
     // "GetAccountId()==db stored account id" checked in LoadFromDB (prevent login not own character using cheating tools)
     if (!pCurrChar->LoadFromDB(playerGuid, holder))

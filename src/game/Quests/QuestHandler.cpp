@@ -35,10 +35,6 @@
 #include "PlayerBot/Base/PlayerbotAI.h"
 #endif
 
-#ifdef ENABLE_ACHIEVEMENTS
-#include "AchievementsMgr.h"
-#endif
-
 void WorldSession::HandleQuestgiverStatusQueryOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
@@ -465,10 +461,6 @@ void WorldSession::HandleQuestLogRemoveQuest(WorldPacket& recv_data)
             }
 
             _player->SetQuestStatus(quest, QUEST_STATUS_NONE);
-
-#ifdef ENABLE_ACHIEVEMENTS
-            sAchievementsMgr.UpdateAchievementCriteria(_player, ACHIEVEMENT_CRITERIA_TYPE_QUEST_ABANDONED, 1);
-#endif
         }
 
         _player->SetQuestSlot(slot, 0);
