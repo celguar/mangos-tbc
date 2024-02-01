@@ -39,6 +39,10 @@
 #include "Chat/Chat.h"
 #include "Anticheat/Anticheat.hpp"
 
+#ifdef ENABLE_ACHIEVEMENTS
+#include "AchievementsMgr.h"
+#endif
+
 #define MAX_INBOX_CLIENT_UI_CAPACITY 50
 
 bool WorldSession::CheckMailBox(ObjectGuid guid) const
@@ -242,6 +246,10 @@ void WorldSession::HandleSendMail(WorldPacket& recv_data)
         return pl->ModifyMoney(-int32(cost));
 
     pl->ModifyMoney(-int32(reqmoney));
+
+#ifdef ENABLE_ACHIEVEMENTS
+    sAchievementsMgr.UpdateAchievementCriteria(pl, ACHIEVEMENT_CRITERIA_TYPE_GOLD_SPENT_FOR_MAIL, reqmoney);
+#endif
 
     bool needItemDelay = false;
 

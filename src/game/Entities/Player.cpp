@@ -80,6 +80,10 @@
 #include "ImmersiveMgr.h"
 #endif
 
+#ifdef ENABLE_ACHIEVEMENTS
+#include "AchievementsMgr.h"
+#endif
+
 #include "AI/ScriptDevAI/scripts/custom/Transmogrification.h"
 
 #include <cmath>
@@ -459,6 +463,10 @@ void TradeData::SetMoney(uint32 money)
     GetTraderData()->SetAccepted(false);
 
     Update();
+
+#ifdef ENABLE_ACHIEVEMENTS
+    sAchievementsMgr.UpdateAchievementCriteria(m_player, ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_GOLD_VALUE_OWNED);
+#endif
 }
 
 void TradeData::Update(bool for_trader /*= true*/) const
@@ -728,6 +736,10 @@ Player::~Player()
     RemovePlayerbotMgr();
 #endif
 
+#ifdef ENABLE_ACHIEVEMENTS
+    sAchievementsMgr.OnPlayerLogout(this);
+#endif
+
     delete m_declinedname;
 }
 
@@ -891,6 +903,10 @@ bool Player::Create(uint32 guidlow, const std::string& name, uint8 race, uint8 c
         SetPower(POWER_MANA, GetMaxPower(POWER_MANA));
     }
 
+#ifdef ENABLE_ACHIEVEMENTS
+    sAchievementsMgr.OnPlayerCharacterCreated(this);
+#endif
+
     LearnDefaultSkills();
     learnDefaultSpells();
 
@@ -989,6 +1005,10 @@ bool Player::Create(uint32 guidlow, const std::string& name, uint8 race, uint8 c
     }
     // all item positions resolved
 
+#ifdef ENABLE_ACHIEVEMENTS
+    sAchievementsMgr.CheckAllAchievementCriteria(this);
+#endif
+
     return true;
 }
 
@@ -1084,6 +1104,10 @@ uint32 Player::EnvironmentalDamage(EnviromentalDamage type, uint32 damage)
         // durability lost message
         WorldPacket data2(SMSG_DURABILITY_DAMAGE_DEATH, 0);
         GetSession()->SendPacket(data2);
+
+#ifdef ENABLE_ACHIEVEMENTS
+        sAchievementsMgr.UpdateAchievementCriteria(this, ACHIEVEMENT_CRITERIA_TYPE_DEATHS_FROM, 1, type);
+#endif
     }
 
     return final_damage;
@@ -1505,6 +1529,10 @@ void Player::Update(const uint32 diff)
         }
     }
 
+#ifdef ENABLE_ACHIEVEMENTS
+    sAchievementsMgr.UpdateTimedAchievements(this, diff);
+#endif
+
     if (hasUnitState(UNIT_STAT_MELEE_ATTACKING))
     {
         UpdateMeleeAttackingState();
@@ -1748,6 +1776,10 @@ void Player::SetDeathState(DeathState s)
 
         if (InstanceData* mapInstance = GetInstanceData())
             mapInstance->OnPlayerDeath(this);
+
+#ifdef ENABLE_ACHIEVEMENTS
+        sAchievementsMgr.OnPlayerSetDeathState(this);
+#endif
     }
 
     Unit::SetDeathState(s);
@@ -2903,6 +2935,10 @@ void Player::GiveLevel(uint32 level)
 #ifdef ENABLE_IMMERSIVE
     sImmersiveMgr.OnPlayerGiveLevel(this);
 #endif
+
+#ifdef ENABLE_ACHIEVEMENTS
+    sAchievementsMgr.UpdateAchievementCriteria(this, ACHIEVEMENT_CRITERIA_TYPE_REACH_LEVEL);
+#endif
 }
 
 void Player::UpdateFreeTalentPoints(bool resetIfNeed)
@@ -3628,6 +3664,10 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
         }
     }
 
+#ifdef ENABLE_ACHIEVEMENTS
+    sAchievementsMgr.OnPlayerSpellAdded(this, spell_id);
+#endif
+
     // return true (for send learn packet) only if spell active (in case ranked spells) and not replace old spell
     return active && !disabled && !superceded_old;
 }
@@ -4034,6 +4074,10 @@ bool Player::resetTalents(bool no_cost)
 
         m_resetTalentsCost = cost;
         m_resetTalentsTime = time(nullptr);
+
+#ifdef ENABLE_ACHIEVEMENTS
+        sAchievementsMgr.OnPlayerResetTalents(this, cost);
+#endif
     }
 
     // FIXME: remove pet before or after unlearn spells? for now after unlearn to allow removing of talent related, pet affecting auras
@@ -4465,6 +4509,11 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
             CharacterDatabase.PExecute("DELETE FROM guild_bank_eventlog WHERE PlayerGuid = '%u'", lowguid);
             CharacterDatabase.PExecute("DELETE FROM character_armory_feed WHERE guid = '%u'", lowguid);
             CharacterDatabase.CommitTransaction();
+
+#ifdef ENABLE_ACHIEVEMENTS
+            sAchievementsMgr.OnPlayerDeletedFromDB(lowguid);
+#endif
+
             break;
         }
         // The character gets unlinked from the account, the name gets freed up and appears as deleted ingame
@@ -5458,6 +5507,10 @@ bool Player::UpdateSkill(uint16 id, uint16 diff)
         if (skillStatus.uState != SKILL_NEW)
             skillStatus.uState = SKILL_CHANGED;
 
+#ifdef ENABLE_ACHIEVEMENTS
+        sAchievementsMgr.UpdateAchievementCriteria(this, ACHIEVEMENT_CRITERIA_TYPE_REACH_SKILL_LEVEL, id);
+#endif
+
         return true;
     }
 
@@ -5616,6 +5669,10 @@ bool Player::UpdateSkillPro(uint16 SkillId, int32 Chance, uint16 diff)
 
         if (skillStatus.uState != SKILL_NEW)
             skillStatus.uState = SKILL_CHANGED;
+
+#ifdef ENABLE_ACHIEVEMENTS
+        sAchievementsMgr.UpdateAchievementCriteria(this, ACHIEVEMENT_CRITERIA_TYPE_REACH_SKILL_LEVEL, SkillId);
+#endif
 
         DEBUG_LOG("Player::UpdateSkillPro Chance=%3.1f%% taken", Chance / 10.0);
         return true;
@@ -5813,6 +5870,10 @@ void Player::SetSkill(uint16 id, uint16 value, uint16 max, uint16 step/* = 0*/)
 
                 itr = result.first;
             }
+
+#ifdef ENABLE_ACHIEVEMENTS
+            sAchievementsMgr.OnPlayerSetSkill(this, id);
+#endif
 
             SetUInt32Value(PLAYER_SKILL_INDEX(pos), MAKE_PAIR32(id, step));         // Set/reset skill id and step
             SetSkill(itr, value, max);                                              // Set current and max values
@@ -6576,6 +6637,10 @@ void Player::CheckAreaExploreAndOutdoor()
     uint32 val = (uint32)(1 << (areaFlag % 32));
     uint32 currFields = GetUInt32Value(PLAYER_EXPLORED_ZONES_1 + offset);
 
+#ifdef ENABLE_ACHIEVEMENTS
+    sAchievementsMgr.UpdateAchievementCriteria(this, ACHIEVEMENT_CRITERIA_TYPE_EXPLORE_AREA, sTerrainMgr.GetAreaIdByAreaFlag(areaFlag, GetMapId()));
+#endif
+
     if (!(currFields & val))
     {
         SetUInt32Value(PLAYER_EXPLORED_ZONES_1 + offset, (uint32)(currFields | val));
@@ -7017,6 +7082,10 @@ bool Player::RewardHonor(Unit* uVictim, uint32 groupsize, float honor)
             ApplyModUInt32Value(PLAYER_FIELD_KILLS, 1, true);
             // and those in a lifetime
             ApplyModUInt32Value(PLAYER_FIELD_LIFETIME_HONORABLE_KILLS, 1, true);
+
+#ifdef ENABLE_ACHIEVEMENTS
+            sAchievementsMgr.OnPlayerRewardHonor(this, pVictim);
+#endif
         }
         else
         {
@@ -7411,6 +7480,10 @@ void Player::DuelComplete(DuelCompleteType type)
     SetUInt32Value(PLAYER_DUEL_TEAM, 0);
     duel->opponent->SetGuidValue(PLAYER_DUEL_ARBITER, ObjectGuid());
     duel->opponent->SetUInt32Value(PLAYER_DUEL_TEAM, 0);
+
+#ifdef ENABLE_ACHIEVEMENTS
+    sAchievementsMgr.OnPlayerDuelCompleted(this, duel->opponent, type);
+#endif
 
     delete duel->opponent->duel;
     duel->opponent->duel = nullptr;
@@ -10534,6 +10607,10 @@ Item* Player::StoreNewItem(ItemPosCountVec const& dest, uint32 item, bool update
     {
         ItemAddedQuestCheck(item, count);
         pItem = StoreItem(dest, pItem, update);
+
+#ifdef ENABLE_ACHIEVEMENTS
+        sAchievementsMgr.OnPlayerStoreNewItem(this, item, count);
+#endif
     }
     return pItem;
 }
@@ -10684,6 +10761,10 @@ Item* Player::EquipNewItem(uint16 pos, uint32 item, bool update)
     {
         ItemAddedQuestCheck(item, 1);
 
+#ifdef ENABLE_ACHIEVEMENTS
+        sAchievementsMgr.UpdateAchievementCriteria(this, ACHIEVEMENT_CRITERIA_TYPE_RECEIVE_EPIC_ITEM, item, 1);
+#endif
+
         /* World of Warcraft Armory */
         ItemPrototype const* pProto = pItem->GetProto();
         if (pProto && pProto->Quality > 2 && pProto->Flags != 2048 && (pProto->Class == ITEM_CLASS_WEAPON || pProto->Class == ITEM_CLASS_ARMOR))
@@ -10787,6 +10868,10 @@ Item* Player::EquipItem(uint16 pos, Item* pItem, bool update)
         return pItem2;
     }
 
+#ifdef ENABLE_ACHIEVEMENTS
+    sAchievementsMgr.OnPlayerEquipItem(this, pItem->GetEntry(), slot);
+#endif
+
     return pItem;
 }
 
@@ -10806,6 +10891,10 @@ void Player::QuickEquipItem(uint16 pos, Item* pItem)
             pItem->AddToWorld();
             pItem->SendCreateUpdateToPlayer(this);
         }
+
+#ifdef ENABLE_ACHIEVEMENTS
+        sAchievementsMgr.OnPlayerEquipItem(this, pItem->GetEntry(), slot);
+#endif
     }
 }
 
@@ -10975,6 +11064,10 @@ void Player::MoveItemToInventory(ItemPosCountVec const& dest, Item* pItem, bool 
 {
     // update quest counters
     ItemAddedQuestCheck(pItem->GetEntry(), pItem->GetCount());
+
+#ifdef ENABLE_ACHIEVEMENTS
+    sAchievementsMgr.OnPlayerMoveItemToInventory(this, pItem->GetEntry(), pItem->GetCount());
+#endif
 
     // store item
     Item* pLastItem = StoreItem(dest, pItem, update);
@@ -13710,6 +13803,10 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
         }
     }
 
+#ifdef ENABLE_ACHIEVEMENTS
+    sAchievementsMgr.OnPlayerRewardQuest(this, pQuest);
+#endif
+
     // remove auras from spells with quest reward state limitations
     // Some spells applied at quest reward
     uint32 zone, area;
@@ -14550,6 +14647,10 @@ void Player::KilledMonster(CreatureInfo const* cInfo, Creature const* creature)
 void Player::KilledMonsterCredit(uint32 entry, ObjectGuid guid)
 {
     uint32 addkillcount = 1;
+
+#ifdef ENABLE_ACHIEVEMENTS
+    sAchievementsMgr.OnPlayerKilledMonsterCredit(this, entry, guid);
+#endif
 
     for (int i = 0; i < MAX_QUEST_LOG_SIZE; ++i)
     {
@@ -15847,6 +15948,10 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
 
     _LoadCreatedInstanceTimers();
 
+#ifdef ENABLE_ACHIEVEMENTS
+    sAchievementsMgr.CheckAllAchievementCriteria(this);
+#endif
+
     return true;
 }
 
@@ -17112,6 +17217,10 @@ void Player::SaveToDB()
     _SaveNewInstanceIdTimer();
     m_reputationMgr.SaveToDB();
     GetSession()->SaveTutorialsData();                      // changed only while character in game
+
+#ifdef ENABLE_ACHIEVEMENTS
+    sAchievementsMgr.OnPlayerSavedToDB(this);
+#endif
 
     CharacterDatabase.CommitTransaction();
 
@@ -19089,6 +19198,10 @@ void Player::OnTaxiFlightRouteStart(uint32 pathID, bool initial)
         if (const TaxiPathEntry* path = sTaxiPathStore.LookupEntry(pathID))
             OnTaxiFlightStart(path);
     }
+
+#ifdef ENABLE_ACHIEVEMENTS
+    sAchievementsMgr.OnPlayerTaxiFlightRouteStart(this, m_taxiTracker, initial);
+#endif
 }
 
 void Player::OnTaxiFlightRouteEnd(uint32 pathID, bool final)
@@ -19100,6 +19213,10 @@ void Player::OnTaxiFlightRouteEnd(uint32 pathID, bool final)
     }
     else
         ModifyMoney(-int32(m_taxiTracker.GetCost()));
+
+#ifdef ENABLE_ACHIEVEMENTS
+    sAchievementsMgr.OnPlayerTaxiFlightRouteEnd(this, m_taxiTracker, final);
+#endif
 }
 
 void Player::OnTaxiFlightRouteProgress(const TaxiPathNodeEntry* node, const TaxiPathNodeEntry* next /*= nullptr*/)
@@ -20706,6 +20823,10 @@ void Player::SummonIfPossible(bool agree, ObjectGuid guid)
     m_summon_expire = 0;
     m_summoner.Clear();
 
+#ifdef ENABLE_ACHIEVEMENTS
+    sAchievementsMgr.UpdateAchievementCriteria(this, ACHIEVEMENT_CRITERIA_TYPE_ACCEPTED_SUMMONINGS, 1);
+#endif
+
     TeleportTo(m_summon_mapid, m_summon_x, m_summon_y, m_summon_z, GetOrientation());
 }
 
@@ -20937,6 +21058,10 @@ void Player::RewardSinglePlayerAtKill(Unit* pVictim)
 
         if (Pet* pet = GetPet())
             pet->GivePetXP(MaNGOS::XP::Gain(pet, creatureVictim));
+
+#ifdef ENABLE_ACHIEVEMENTS
+        sAchievementsMgr.OnPlayerRewardSinglePlayerAtKill(this, pVictim);
+#endif
 
         // normal creature (not pet/etc) can be only in !PvP case
         if (CreatureInfo const* normalInfo = creatureVictim->GetCreatureInfo())
@@ -21904,6 +22029,10 @@ void Player::HandleFall(MovementInfo const& movementInfo)
             // Z given by moveinfo, LastZ, FallTime, WaterZ, MapZ, Damage, Safefall reduction
             DEBUG_LOG("FALLDAMAGE z=%f sz=%f pZ=%f FallTime=%d mZ=%f damage=%d SF=%d", position.z, height, GetPositionZ(), movementInfo.GetFallTime(), height, damage, safe_fall);
         }
+
+#ifdef ENABLE_ACHIEVEMENTS
+        sAchievementsMgr.OnPlayerHandleFall(this, z_diff);
+#endif
     }
 }
 
