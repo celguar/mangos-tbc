@@ -1861,7 +1861,7 @@ void World::Update(uint32 diff)
 #endif
 
 #ifdef ENABLE_IMMERSIVE
-    sImmersive.Update(diff);
+    sImmersiveMgr.Update(diff);
 #endif
 
     /// <li> Handle session updates
