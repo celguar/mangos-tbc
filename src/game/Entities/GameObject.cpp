@@ -46,7 +46,7 @@
 #include "Entities/Transports.h"
 
 #ifdef ENABLE_IMMERSIVE
-#include "Immersive.h"
+#include "ImmersiveMgr.h"
 #endif
 
 bool QuaternionData::isUnit() const
@@ -1722,7 +1722,7 @@ void GameObject::Use(Unit* user, SpellEntry const* spellInfo)
                     bool success = skill >= zone_skill && chance >= roll;
 
 #ifdef ENABLE_IMMERSIVE
-                    success = sImmersive.OnFishing(player, success);
+                    success = sImmersiveMgr.OnPlayerUseFishingNode(player, success);
 #endif
 
                     GameObject* fishingHole = nullptr;
