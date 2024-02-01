@@ -31,6 +31,10 @@
 #include <sstream>
 #include <iomanip>
 
+#ifdef ENABLE_ACHIEVEMENTS
+#include "AchievementsMgr.h"
+#endif
+
 INSTANTIATE_SINGLETON_1(LootMgr);
 
 static eConfigFloatValues const qualityToRate[MAX_ITEM_QUALITY] =
@@ -927,7 +931,12 @@ void GroupLootRoll::Finish(RollVoteMap::const_iterator& winnerItr)
         Player* plr = sObjectMgr.GetPlayer(winnerItr->first);
         if (plr && plr->GetSession())
         {
+#ifdef ENABLE_ACHIEVEMENTS
+            InventoryResult msg = m_loot->SendItem(plr, m_itemSlot);
+            sAchievementsMgr.OnGroupLootRollFinish(plr, m_loot, winnerItr->second.vote, winnerItr->second.number, m_itemSlot, msg);
+#else
             m_loot->SendItem(plr, m_itemSlot);
+#endif
         }
         else
         {
@@ -2266,6 +2275,10 @@ void Loot::SendGold(Player* player)
 
             plr->ModifyMoney(money_per_player);
 
+#ifdef ENABLE_ACHIEVEMENTS
+            sAchievementsMgr.UpdateAchievementCriteria(plr, ACHIEVEMENT_CRITERIA_TYPE_LOOT_MONEY, money_per_player);
+#endif
+
             WorldPacket data(SMSG_LOOT_MONEY_NOTIFY, 4);
             data << uint32(money_per_player);
 
@@ -2275,6 +2288,10 @@ void Loot::SendGold(Player* player)
     else
     {
         player->ModifyMoney(m_gold);
+
+#ifdef ENABLE_ACHIEVEMENTS
+        sAchievementsMgr.UpdateAchievementCriteria(player, ACHIEVEMENT_CRITERIA_TYPE_LOOT_MONEY, m_gold);
+#endif
 
         if (m_guidTarget.IsItem())
         {
