@@ -27,6 +27,10 @@
 #include "Entities/UpdateData.h"
 #include "Chat/Chat.h"
 
+#ifdef ENABLE_ACHIEVEMENTS
+#include "AchievementsMgr.h"
+#endif
+
 void WorldSession::HandleSplitItemOpcode(WorldPacket& recv_data)
 {
     // DEBUG_LOG("WORLD: CMSG_SPLIT_ITEM");
@@ -599,6 +603,10 @@ void WorldSession::HandleSellItemOpcode(WorldPacket& recv_data)
     }
 
     _player->ModifyMoney(money);
+
+#ifdef ENABLE_ACHIEVEMENTS
+    sAchievementsMgr.UpdateAchievementCriteria(_player, ACHIEVEMENT_CRITERIA_TYPE_MONEY_FROM_VENDORS, money);
+#endif
 }
 
 void WorldSession::HandleBuybackItem(WorldPacket& recv_data)
@@ -635,6 +643,10 @@ void WorldSession::HandleBuybackItem(WorldPacket& recv_data)
             _player->RemoveItemFromBuyBackSlot(slot, false);
             _player->ItemAddedQuestCheck(pItem->GetEntry(), pItem->GetCount());
             _player->StoreItem(dest, pItem, true);
+
+#ifdef ENABLE_ACHIEVEMENTS
+            sAchievementsMgr.UpdateAchievementCriteria(_player, ACHIEVEMENT_CRITERIA_TYPE_RECEIVE_EPIC_ITEM, pItem->GetEntry(), pItem->GetCount());
+#endif
         }
         else
             _player->SendEquipError(msg, pItem, nullptr);
@@ -921,6 +933,10 @@ void WorldSession::HandleBuyBankSlotOpcode(WorldPacket& recvPacket)
 
     _player->SetBankBagSlotCount(slot);
     _player->ModifyMoney(-int32(price));
+
+#ifdef ENABLE_ACHIEVEMENTS
+    sAchievementsMgr.UpdateAchievementCriteria(_player, ACHIEVEMENT_CRITERIA_TYPE_BUY_BANK_SLOT);
+#endif
 
     data << uint32(ERR_BANKSLOT_OK);
     SendPacket(data);

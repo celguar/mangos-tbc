@@ -36,6 +36,10 @@
 
 #include "Policies/Singleton.h"
 
+#ifdef ENABLE_ACHIEVEMENTS
+#include "AchievementsMgr.h"
+#endif
+
 INSTANTIATE_SINGLETON_1(AuctionHouseMgr);
 
 AuctionHouseMgr::AuctionHouseMgr()
@@ -1021,6 +1025,10 @@ bool AuctionEntry::UpdateBid(uint32 newbid, Player* newbidder /*=nullptr*/)
         if (auction_owner && newbidder) // don't send notification unless newbidder is set (AHBot bidding), otherwise player will be told auction was sold when it was just a bid
             auction_owner->GetSession()->SendAuctionOwnerNotification(this, false);
 
+#ifdef ENABLE_ACHIEVEMENTS
+        sAchievementsMgr.UpdateAchievementCriteria(newbidder, ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_AUCTION_BID, newbid);
+#endif
+
         // after this update we should save player's money ...
         CharacterDatabase.BeginTransaction();
         CharacterDatabase.PExecute("UPDATE auction SET buyguid = '%u', lastbid = '%u' WHERE id = '%u'", bidder, bid, Id);
@@ -1031,5 +1039,10 @@ bool AuctionEntry::UpdateBid(uint32 newbid, Player* newbidder /*=nullptr*/)
     }
         // buyout
     AuctionBidWinning(newbidder);
+
+#ifdef ENABLE_ACHIEVEMENTS
+    sAchievementsMgr.UpdateAchievementCriteria(newbidder, ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_AUCTION_BID, buyout);
+#endif
+
     return false;
 }

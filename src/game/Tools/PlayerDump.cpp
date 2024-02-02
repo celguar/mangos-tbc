@@ -24,6 +24,10 @@
 #include "Globals/ObjectMgr.h"
 #include "Accounts/AccountMgr.h"
 
+#ifdef ENABLE_ACHIEVEMENTS
+#include "AchievementsMgr.h"
+#endif
+
 // Character Dump tables
 struct DumpTable
 {
@@ -394,6 +398,10 @@ DumpReturn PlayerDumpWriter::WriteDump(const std::string& file, uint32 guid)
 
     std::string dump = GetDump(guid);
 
+#ifdef ENABLE_ACHIEVEMENTS
+    sAchievementsMgr.OnPlayerWriteDump(guid, dump);
+#endif
+
     fprintf(fout, "%s\n", dump.c_str());
     fclose(fout);
     return DUMP_SUCCESS;
@@ -513,8 +521,19 @@ DumpReturn PlayerDumpReader::LoadDump(const std::string& file, uint32 account, s
 
         if (!dTable->isValid())
         {
-            sLog.outError("LoadPlayerDump: Unknown table: '%s'!", tn.c_str());
-            ROLLBACK(DUMP_FILE_BROKEN);
+            // Check for modules databases
+            type = DTT_CHAR_TABLE;
+            bool valid = false;
+
+#ifdef ENABLE_ACHIEVEMENTS
+            valid = sAchievementsMgr.IsAchievementsDBTable(tn);
+#endif
+
+            if (!valid)
+            {
+                sLog.outError("LoadPlayerDump: Unknown table: '%s'!", tn.c_str());
+                ROLLBACK(DUMP_FILE_BROKEN);
+            }
         }
 
         bool execute_ok = true;                             // false, if need skip soem query

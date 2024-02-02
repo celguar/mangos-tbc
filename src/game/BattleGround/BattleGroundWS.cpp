@@ -25,6 +25,10 @@
 #include "BattleGroundMgr.h"
 #include "Server/WorldPacket.h"
 
+#ifdef ENABLE_ACHIEVEMENTS
+#include "AchievementsMgr.h"
+#endif
+
 BattleGroundWS::BattleGroundWS() : m_reputationCapture(0), m_honorWinKills(0), m_honorEndKills(0)
 {
     // set battleground start message ids
@@ -123,6 +127,10 @@ void BattleGroundWS::StartingEventOpenDoors()
     GetBgMap()->GetGraveyardManager().SetGraveYardLinkTeam(WS_GRAVEYARD_MAIN_HORDE,        BG_WS_ZONE_ID_MAIN, HORDE);
     GetBgMap()->GetGraveyardManager().SetGraveYardLinkTeam(WS_GRAVEYARD_FLAGROOM_ALLIANCE, BG_WS_ZONE_ID_MAIN, TEAM_INVALID);
     GetBgMap()->GetGraveyardManager().SetGraveYardLinkTeam(WS_GRAVEYARD_FLAGROOM_HORDE,    BG_WS_ZONE_ID_MAIN, TEAM_INVALID);
+
+#ifdef ENABLE_ACHIEVEMENTS
+    sAchievementsMgr.StartTimedAchievement(this, ACHIEVEMENT_TIMED_TYPE_EVENT, ACHIEVEMENT_CRITERIA_TIMED_ASSET_ID_BG_WS_EVENT_START_BATTLE);
+#endif
 }
 
 void BattleGroundWS::AddPlayer(Player* player)
@@ -337,6 +345,10 @@ void BattleGroundWS::ProcessFlagPickUpFromBase(Player* player, Team attackerTeam
     PlaySoundToAll(wsgFlagData[otherTeamIdx][BG_WS_FLAG_ACTION_PICKEDUP].soundId);
     SendMessageToAll(wsgFlagData[otherTeamIdx][BG_WS_FLAG_ACTION_PICKEDUP].messageId, wsgFlagData[teamIdx][BG_WS_FLAG_ACTION_PICKEDUP].chatType, player);
     player->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_PVP_ACTIVE_CANCELS);
+
+#ifdef ENABLE_ACHIEVEMENTS
+    sAchievementsMgr.StartTimedAchievement(player, ACHIEVEMENT_TIMED_TYPE_SPELL_TARGET, teamIdx == TEAM_INDEX_HORDE ? ACHIEVEMENT_CRITERIA_TIMED_ASSET_ID_BG_WS_SPELL_SILVERWING_FLAG_PICKED : ACHIEVEMENT_CRITERIA_TIMED_ASSET_ID_BG_WS_SPELL_WARSONG_FLAG_PICKED);
+#endif
 }
 
 // Function that handles the click action on the dropped flag
@@ -637,6 +649,10 @@ void BattleGroundWS::UpdatePlayerScore(Player* player, uint32 type, uint32 value
             BattleGround::UpdatePlayerScore(player, type, value);
             break;
     }
+
+#ifdef ENABLE_ACHIEVEMENTS
+    sAchievementsMgr.OnBGUpdatePlayerScore(this, player, (ScoreType)type);
+#endif
 }
 
 Team BattleGroundWS::GetPrematureWinner()
