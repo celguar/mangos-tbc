@@ -84,6 +84,17 @@ if(NOT BUILD_ACHIEVEMENTS)
   endforeach()
 endif()
 
+if(NOT BUILD_HARDCORE)
+  # exclude Hardcore folder
+  set (EXCLUDE_DIR "Hardcore/")
+  foreach (TMP_PATH ${LIBRARY_SRCS})
+      string (FIND ${TMP_PATH} ${EXCLUDE_DIR} EXCLUDE_DIR_FOUND)
+      if (NOT ${EXCLUDE_DIR_FOUND} EQUAL -1)
+          list(REMOVE_ITEM LIBRARY_SRCS ${TMP_PATH})
+      endif ()
+  endforeach()
+endif()
+
 set(PCH_BASE_FILENAME "pchdef")
 # exclude pchdef files
 set (EXCLUDE_FILE "${PCH_BASE_FILENAME}")
@@ -218,6 +229,12 @@ if(BUILD_ACHIEVEMENTS)
     add_dependencies(${LIBRARY_NAME} Achievements)
 endif()
 
+if(BUILD_HARDCORE)
+    include_directories(${CMAKE_SOURCE_DIR}/src/modules/Hardcore/src)
+	target_link_libraries(${LIBRARY_NAME} PUBLIC Hardcore)
+    add_dependencies(${LIBRARY_NAME} Hardcore)
+endif()
+
 if(UNIX)
   # Both systems don't have libdl and don't need them
   if (NOT (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" OR CMAKE_SYSTEM_NAME STREQUAL "NetBSD"))
@@ -258,6 +275,11 @@ endif()
 # Define ENABLE_ACHIEVEMENTS if need
 if (BUILD_ACHIEVEMENTS)
   add_definitions(-DENABLE_ACHIEVEMENTS)
+endif()
+
+# Define ENABLE_HARDCORE if need
+if (BUILD_HARDCORE)
+  add_definitions(-DENABLE_HARDCORE)
 endif()
 
 if (MSVC)
