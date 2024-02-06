@@ -835,6 +835,10 @@ class ChatHandler
         bool HandleAchievementsCommand(char* args);
 #endif
 
+#ifdef ENABLE_HARDCORE
+        bool HandleHardcoreCommand(char* args);
+#endif
+
         Player*   getSelectedPlayer() const;
         Unit*     getSelectedUnit(bool self = true) const;
         Creature* getSelectedCreature() const;
