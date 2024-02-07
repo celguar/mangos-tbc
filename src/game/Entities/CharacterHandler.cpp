@@ -39,7 +39,6 @@
 #include "Tools/Language.h"
 #include "AI/ScriptDevAI/ScriptDevAIMgr.h"
 #include "Anticheat/Anticheat.hpp"
-#include "AI/ScriptDevAI/scripts/custom/Transmogrification.h"
 #include "Mails/Mail.h"
 
 #ifdef BUILD_PLAYERBOT
@@ -53,6 +52,10 @@
 
 #ifdef ENABLE_ACHIEVEMENTS
 #include "AchievementsMgr.h"
+#endif
+
+#ifdef ENABLE_TRANSMOG
+#include "TransmogMgr.h"
 #endif
 
 // config option SkipCinematics supported values
@@ -1147,37 +1150,8 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
     }
     //End Solocraft Functions
 
-    ObjectGuid playerGUID = _player->GetObjectGuid();
-    sTransmogrification->entryMap.erase(playerGUID);
-    auto result = CharacterDatabase.PQuery("SELECT GUID, FakeEntry FROM custom_transmogrification WHERE Owner = %u", _player->GetObjectGuid());
-    if (result)
-    {
-        do
-        {
-            const ObjectGuid itemGUID = ObjectGuid(HIGHGUID_ITEM, ((*result)[0].GetUInt32()));
-            uint32 fakeEntry = (*result)[1].GetUInt32();
-            if (sObjectMgr.GetItemPrototype(fakeEntry))
-            {
-                sTransmogrification->dataMap[itemGUID] = playerGUID;
-                sTransmogrification->entryMap[playerGUID][itemGUID] = fakeEntry;
-            }
-            else
-            {
-                //sLog->outError(LOG_FILTER_SQL, "Item entry (Entry: %u, itemGUID: %u, playerGUID: %u) does not exist, ignoring.", fakeEntry, GUID_LOPART(itemGUID), player->GetObjectGuidLow());
-                // CharacterDatabase.PExecute("DELETE FROM custom_transmogrification WHERE FakeEntry = %u", fakeEntry);
-            }
-        } while (result->NextRow());
-
-        for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; ++slot)
-        {
-            if (Item* item = _player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot))
-                _player->SetVisibleItemSlot(slot, item);
-        }
-    }
-
-#ifdef PRESETS
-    if (sTransmogrification->GetEnableSets())
-        sTransmogrification->LoadPlayerSets(playerGUID);
+#ifdef ENABLE_TRANSMOG
+    sTransmogMgr.OnPlayerLogin(pCurrChar);
 #endif
 
     m_playerLoading = false;

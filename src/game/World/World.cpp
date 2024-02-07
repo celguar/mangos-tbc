@@ -67,7 +67,6 @@
 #include "Cinematics/CinematicMgr.h"
 #include "Maps/TransportMgr.h"
 #include "Anticheat/Anticheat.hpp"
-#include "AI/ScriptDevAI/scripts/custom/Transmogrification.h"
 
 #ifdef BUILD_AHBOT
  #include "AuctionHouseBot/AuctionHouseBot.h"
@@ -93,6 +92,10 @@
 
 #ifdef ENABLE_HARDCORE
 #include "HardcoreMgr.h"
+#endif
+
+#ifdef ENABLE_TRANSMOG
+#include "TransmogMgr.h"
 #endif
 
 #include "Metric/Metric.h"
@@ -1018,8 +1021,6 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_FLOAT_HEROIC_SUNWELL5MANFIX_DIFF, "Solocraft.Sunwell5ManFixH", 5.0);
     //End Solocraft Config
 
-    sTransmogrification->LoadConfig(reload);
-
     setConfig(CONFIG_UINT32_DUAL_SPEC_ITEM_ID, "Custom.DualSpecItemId", 17731);
     setConfig(CONFIG_UINT32_DUAL_SPEC_COST, "Custom.DualSpecCost", 10000000);
 
@@ -1639,13 +1640,10 @@ void World::SetInitialWorldSettings()
     sHardcoreMgr.Init();
 #endif
 
-    sTransmogrification->LoadConfig(false);
-    CharacterDatabase.Execute("DELETE FROM custom_transmogrification WHERE NOT EXISTS (SELECT 1 FROM item_instance WHERE item_instance.guid = custom_transmogrification.GUID)");
-#ifdef PRESETS
-    // Clean even if disabled
-    // Dont delete even if player has more presets than should
-    CharacterDatabase.Execute("DELETE FROM `custom_transmogrification_sets` WHERE NOT EXISTS(SELECT 1 FROM characters WHERE characters.guid = custom_transmogrification_sets.Owner)");
+#ifdef ENABLE_TRANSMOG
+    sTransmogMgr.Init();
 #endif
+
     sLog.outString("---------------------------------------");
     sLog.outString("      CMANGOS: World initialized       ");
     sLog.outString("---------------------------------------");
