@@ -742,6 +742,10 @@ Player::~Player()
     RemovePlayerbotMgr();
 #endif
 
+#ifdef ENABLE_ACHIEVEMENTS
+    sAchievementsMgr.OnPlayerLogout(this);
+#endif
+
     delete m_declinedname;
 }
 
