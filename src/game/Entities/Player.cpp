@@ -17218,8 +17218,6 @@ void Player::SaveToDB()
     _SaveDailyQuestStatus();
     _SaveWeeklyQuestStatus();
     _SaveMonthlyQuestStatus();
-    _SaveTalents();
-    _SaveTalentSpecNames();
     _SaveSpells();
     _SaveSpellCooldowns();
     _SaveActions();
@@ -17375,7 +17373,6 @@ void Player::_SaveActions()
             {
                 SqlStatement stmt = CharacterDatabase.CreateStatement(insertAction, "INSERT INTO character_action (guid,button,action,type) VALUES (?, ?, ?, ?)");
                 stmt.addUInt32(GetGUIDLow());
-                stmt.addUInt32(uint32(m_activeSpec));
                 stmt.addUInt32(uint32(itr->first));
                 stmt.addUInt32(itr->second.GetAction());
                 stmt.addUInt32(uint32(itr->second.GetType()));
