@@ -38,6 +38,10 @@
 #include "TransmogMgr.h"
 #endif
 
+#ifdef ENABLE_DUALSPEC
+#include "DualSpecMgr.h"
+#endif
+
 // Sent by client when player talk to the battle master
 void WorldSession::HandleBattlemasterHelloOpcode(WorldPacket& recv_data)
 {
@@ -650,6 +654,10 @@ void WorldSession::HandleAreaSpiritHealerQueueOpcode(WorldPacket& recv_data)
 
 #ifdef ENABLE_TRANSMOG
     sTransmogMgr.OnPlayerGossipHello(_player, unit);
+#endif
+
+#ifdef ENABLE_DUALSPEC
+    sDualSpecMgr.OnPlayerGossipHello(_player, unit);
 #endif
 }
 
