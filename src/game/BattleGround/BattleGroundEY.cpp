@@ -29,6 +29,10 @@
 #include "Maps/MapManager.h"
 #include "AI/ScriptDevAI/include/sc_grid_searchers.h"
 
+#ifdef ENABLE_MODULES
+#include "ModuleMgr.h"
+#endif
+
 BattleGroundEY::BattleGroundEY(): m_flagState(), m_honorTicks(0), m_flagRespawnTimer(0), m_resourceUpdateTimer(0)
 {
     // set battleground start message id
@@ -605,6 +609,11 @@ void BattleGroundEY::UpdatePlayerScore(Player* source, uint32 type, uint32 value
             BattleGround::UpdatePlayerScore(source, type, value);
             break;
     }
+
+#ifdef ENABLE_MODULES
+    if (type >= 7)
+        sModuleMgr.OnUpdatePlayerScore(this, source, type, value);
+#endif
 }
 
 Team BattleGroundEY::GetPrematureWinner()

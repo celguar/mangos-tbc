@@ -39,8 +39,8 @@
 #include "Chat/Chat.h"
 #include "Anticheat/Anticheat.hpp"
 
-#ifdef ENABLE_ACHIEVEMENTS
-#include "AchievementsMgr.h"
+#ifdef ENABLE_MODULES
+#include "ModuleMgr.h"
 #endif
 
 #define MAX_INBOX_CLIENT_UI_CAPACITY 50
@@ -247,10 +247,6 @@ void WorldSession::HandleSendMail(WorldPacket& recv_data)
 
     pl->ModifyMoney(-int32(reqmoney));
 
-#ifdef ENABLE_ACHIEVEMENTS
-    sAchievementsMgr.UpdateAchievementCriteria(pl, ACHIEVEMENT_CRITERIA_TYPE_GOLD_SPENT_FOR_MAIL, reqmoney);
-#endif
-
     bool needItemDelay = false;
 
     MailDraft draft(subject, body);
@@ -308,6 +304,10 @@ void WorldSession::HandleSendMail(WorldPacket& recv_data)
     CharacterDatabase.BeginTransaction();
     pl->SaveInventoryAndGoldToDB();
     CharacterDatabase.CommitTransaction();
+
+#ifdef ENABLE_MODULES
+    sModuleMgr.OnSendMail(pl, rc, reqmoney);
+#endif
 }
 
 /**

@@ -22,12 +22,8 @@
 #include "Server/WorldPacket.h"
 #include "Globals/ObjectMgr.h"
 
-#ifdef ENABLE_IMMERSIVE
-#include "ImmersiveMgr.h"
-#endif
-
-#ifdef ENABLE_ACHIEVEMENTS
-#include "AchievementsMgr.h"
+#ifdef ENABLE_MODULES
+#include "ModuleMgr.h"
 #endif
 
 const int32 ReputationMgr::PointsInRank[MAX_REPUTATION_RANK] = {36000, 3000, 3000, 3000, 6000, 12000, 21000, 1000};
@@ -278,10 +274,6 @@ void ReputationMgr::SetReputation(FactionEntry const* factionEntry, int32 standi
     if (!factionEntry)
         return;
 
-#ifdef ENABLE_IMMERSIVE
-    sImmersiveMgr.OnPlayerSetReputation(m_player, factionEntry, standing, incremental);
-#endif
-
     bool anyRankIncreased = false;
     // if spillover definition exists in DB, override DBC
     if (const RepSpilloverTemplate* repTemplate = sObjectMgr.GetRepSpilloverTemplate(factionEntry->ID))
@@ -395,8 +387,8 @@ bool ReputationMgr::SetOneFactionReputation(FactionEntry const* factionEntry, in
 
         m_player->ReputationChanged(factionEntry);
 
-#ifdef ENABLE_ACHIEVEMENTS
-        sAchievementsMgr.OnSetOneFactionReputation(m_player, factionEntry->ID);
+#ifdef ENABLE_MODULES
+        sModuleMgr.OnSetReputation(m_player, factionEntry, standing, incremental);
 #endif
 
         if (rankNew > rankOld)
