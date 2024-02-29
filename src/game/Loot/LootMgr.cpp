@@ -2092,7 +2092,7 @@ InventoryResult Loot::SendItem(Player* target, LootItem* lootItem, bool sendErro
             Item* newItem = target->StoreNewItem(dest, lootItem->itemId, true, lootItem->randomPropertyId);
 
 #ifdef ENABLE_MODULES
-            sModuleMgr.OnStoreNewItem(target, this, newItem);
+            sModuleMgr.OnStoreItem(this, newItem);
 #endif
 
             if (lootItem->freeForAll)
