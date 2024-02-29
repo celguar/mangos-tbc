@@ -1091,11 +1091,12 @@ uint32 Player::EnvironmentalDamage(EnviromentalDamage type, uint32 damage)
         // durability lost message
         WorldPacket data2(SMSG_DURABILITY_DAMAGE_DEATH, 0);
         GetSession()->SendPacket(data2);
+    }
 
 #ifdef ENABLE_MODULES
+    if (!IsAlive())
         sModuleMgr.OnDeath(this, type);
 #endif
-    }
 
     return final_damage;
 }
