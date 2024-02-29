@@ -53,6 +53,10 @@ void BattleGroundRL::Reset()
 void BattleGroundRL::StartingEventOpenDoors()
 {
     OpenDoorEvent(BG_EVENT_DOOR);
+
+#ifdef ENABLE_MODULES
+    sModuleMgr.OnStartBattleGround(this);
+#endif
 }
 
 void BattleGroundRL::AddPlayer(Player* plr)

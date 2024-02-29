@@ -83,6 +83,10 @@ void BattleGroundEY::StartingEventOpenDoors()
     // setup graveyards
     GetBgMap()->GetGraveyardManager().SetGraveYardLinkTeam(GRAVEYARD_EY_MAIN_ALLIANCE, EY_ZONE_ID_MAIN, ALLIANCE);
     GetBgMap()->GetGraveyardManager().SetGraveYardLinkTeam(GRAVEYARD_EY_MAIN_HORDE, EY_ZONE_ID_MAIN, HORDE);
+
+#ifdef ENABLE_MODULES
+    sModuleMgr.OnStartBattleGround(this);
+#endif
 }
 
 void BattleGroundEY::AddPoints(Team team, uint32 points)
@@ -611,8 +615,7 @@ void BattleGroundEY::UpdatePlayerScore(Player* source, uint32 type, uint32 value
     }
 
 #ifdef ENABLE_MODULES
-    if (type >= 7)
-        sModuleMgr.OnUpdatePlayerScore(this, source, type, value);
+    sModuleMgr.OnUpdatePlayerScore(this, source, type, value);
 #endif
 }
 
