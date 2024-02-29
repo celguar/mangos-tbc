@@ -25,6 +25,10 @@
 #include "World/WorldStateDefines.h"
 #include "World/WorldStateVariableManager.h"
 
+#ifdef ENABLE_MODULES
+#include "ModuleMgr.h"
+#endif
+
 BattleGroundNA::BattleGroundNA()
 {
     m_startDelayTimes[BG_STARTING_EVENT_FIRST]  = BG_START_DELAY_1M;
