@@ -36,8 +36,8 @@
 
 #include <cstdarg>
 
-#ifdef ENABLE_ACHIEVEMENTS
-#include "AchievementsMgr.h"
+#ifdef ENABLE_MODULES
+#include "ModuleMgr.h"
 #endif
 
 namespace MaNGOS
@@ -937,10 +937,6 @@ void BattleGround::EndBattleGround(Team winner)
         BattleGroundQueueTypeId bgQueueTypeId = BattleGroundMgr::BgQueueTypeId(GetTypeId(), GetArenaType());
         sBattleGroundMgr.BuildBattleGroundStatusPacket(data, this, plr->GetBattleGroundQueueIndex(bgQueueTypeId), STATUS_IN_PROGRESS, TIME_TO_AUTOREMOVE, GetStartTime(), GetArenaType(), plr->GetBGTeam());
         plr->GetSession()->SendPacket(data);
-
-#ifdef ENABLE_ACHIEVEMENTS
-        sAchievementsMgr.OnPlayerEndBattleground(plr, winner);
-#endif
     }
 
     if (IsArena() && IsRated() && winner_arena_team && loser_arena_team)
@@ -960,6 +956,10 @@ void BattleGround::EndBattleGround(Team winner)
     // AV message is different - TODO: check if others are also wrong
     if (winmsg_id && GetTypeId() != BATTLEGROUND_AV)
         SendMessageToAll(winmsg_id, CHAT_MSG_BG_SYSTEM_NEUTRAL);
+
+#ifdef ENABLE_MODULES
+    sModuleMgr.OnEndBattleGround(this, winner);
+#endif
 }
 
 /**
@@ -1302,8 +1302,8 @@ void BattleGround::RemovePlayerAtLeave(ObjectGuid playerGuid, bool isOnTransport
         if (isOnTransport)
             player->TeleportToBGEntryPoint();
 
-#ifdef ENABLE_ACHIEVEMENTS
-        sAchievementsMgr.ResetAchievementCriteria(player, ACHIEVEMENT_CRITERIA_CONDITION_BG_MAP, GetMapId(), true);
+#ifdef ENABLE_MODULES
+        sModuleMgr.OnLeaveBattleGround(this, player);
 #endif
 
         DETAIL_LOG("BATTLEGROUND: Removed player %s from BattleGround.", player->GetName());
@@ -1427,16 +1427,16 @@ void BattleGround::AddPlayer(Player* player)
             player->CastSpell(player, SPELL_PREPARATION, TRIGGERED_OLD_TRIGGERED);   // reduces all mana cost of spells.
     }
 
-#ifdef ENABLE_ACHIEVEMENTS
-    sAchievementsMgr.ResetAchievementCriteria(player, ACHIEVEMENT_CRITERIA_CONDITION_BG_MAP, GetMapId(), true);
-#endif
-
     // setup BG group membership
     PlayerAddedToBgCheckIfBgIsRunning(player);
     AddOrSetPlayerToCorrectBgGroup(player, guid, team);
 
     // Log
     DETAIL_LOG("BATTLEGROUND: Player %s joined the battle.", player->GetName());
+
+#ifdef ENABLE_MODULES
+    sModuleMgr.OnJoinBattleGround(this, player);
+#endif
 }
 
 /* this method adds player to his team's bg group, or sets his correct group if player is already in bg group */

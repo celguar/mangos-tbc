@@ -25,6 +25,10 @@
 #include "World/WorldStateDefines.h"
 #include "World/WorldStateVariableManager.h"
 
+#ifdef ENABLE_MODULES
+#include "ModuleMgr.h"
+#endif
+
 BattleGroundNA::BattleGroundNA()
 {
     m_startDelayTimes[BG_STARTING_EVENT_FIRST]  = BG_START_DELAY_1M;
@@ -54,6 +58,10 @@ void BattleGroundNA::Reset()
 void BattleGroundNA::StartingEventOpenDoors()
 {
     OpenDoorEvent(BG_EVENT_DOOR);
+
+#ifdef ENABLE_MODULES
+    sModuleMgr.OnStartBattleGround(this);
+#endif
 }
 
 void BattleGroundNA::AddPlayer(Player* plr)

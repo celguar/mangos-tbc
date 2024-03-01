@@ -171,7 +171,7 @@ extern TaxiPathNodesByPath                       sTaxiPathNodesByPath;
 extern DBCStorage <TransportAnimationEntry>      sTransportAnimationStore;
 extern DBCStorage <TotemCategoryEntry>           sTotemCategoryStore;
 extern DBCStorage <WMOAreaTableEntry>            sWMOAreaTableStore;
-#ifdef ENABLE_ACHIEVEMENTS
+#ifdef ENABLE_MODULES
 extern DBCStorage <WorldMapAreaEntry>            sWorldMapAreaStore;
 extern DBCStorage <WorldMapOverlayEntry>         sWorldMapOverlayStore;
 #else

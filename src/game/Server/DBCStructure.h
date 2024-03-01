@@ -1315,7 +1315,7 @@ struct WorldMapAreaEntry
     int32   virtual_map_id;                                 // 8        m_displayMapID -1 (map_id have correct map) other: virtual map where zone show (map_id - where zone in fact internally)
 };
 
-#ifdef ENABLE_ACHIEVEMENTS
+#ifdef ENABLE_MODULES
 #define MAX_WORLD_MAP_OVERLAY_AREA_IDX 4
 struct WorldMapOverlayEntry
 {
