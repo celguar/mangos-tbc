@@ -25,6 +25,10 @@
 #include "World/WorldStateDefines.h"
 #include "World/WorldStateVariableManager.h"
 
+#ifdef ENABLE_MODULES
+#include "ModuleMgr.h"
+#endif
+
 BattleGroundBE::BattleGroundBE()
 {
     m_startDelayTimes[BG_STARTING_EVENT_FIRST]  = BG_START_DELAY_1M;
@@ -53,6 +57,10 @@ void BattleGroundBE::Reset()
 void BattleGroundBE::StartingEventOpenDoors()
 {
     OpenDoorEvent(BG_EVENT_DOOR);
+
+#ifdef ENABLE_MODULES
+    sModuleMgr.OnStartBattleGround(this);
+#endif
 }
 
 void BattleGroundBE::AddPlayer(Player* plr)
@@ -114,4 +122,8 @@ void BattleGroundBE::UpdatePlayerScore(Player* source, uint32 type, uint32 value
 
     // there is nothing special in this score
     BattleGround::UpdatePlayerScore(source, type, value);
+
+#ifdef ENABLE_MODULES
+    sModuleMgr.OnUpdatePlayerScore(this, source, type, value);
+#endif
 }

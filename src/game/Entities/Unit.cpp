@@ -62,16 +62,8 @@
  #include "Metric/Metric.h"
 #endif
 
-#ifdef ENABLE_IMMERSIVE
-#include "ImmersiveMgr.h"
-#endif
-
-#ifdef ENABLE_ACHIEVEMENTS
-#include "AchievementsMgr.h"
-#endif
-
-#ifdef ENABLE_HARDCORE
-#include "HardcoreMgr.h"
+#ifdef ENABLE_MODULES
+#include "ModuleMgr.h"
 #endif
 
 float baseMoveSpeed[MAX_MOVE_TYPE] =
@@ -1096,8 +1088,8 @@ uint32 Unit::DealDamage(Unit* dealer, Unit* victim, uint32 damage, CleanDamage c
 
     DEBUG_FILTER_LOG(LOG_FILTER_DAMAGE, "DealDamageEnd returned %d damage", damage);
 
-#ifdef ENABLE_ACHIEVEMENTS
-    sAchievementsMgr.OnUnitDealDamage(dealer, victim, health, damage);
+#ifdef ENABLE_MODULES
+    sModuleMgr.OnDealDamage(dealer, victim, health, damage);
 #endif
 
     return damage;
@@ -1184,10 +1176,6 @@ void Unit::Kill(Unit* killer, Unit* victim, DamageEffectType damagetype, SpellEn
             tapper->RewardSinglePlayerAtKill(victim);
     }
 
-#ifdef ENABLE_ACHIEVEMENTS
-    sAchievementsMgr.UpdateAchievementCriteria(responsiblePlayer, ACHIEVEMENT_CRITERIA_TYPE_GET_KILLING_BLOWS, 1, 0, victim);
-#endif
-
     /*
     *  Actions for the killer
     */
@@ -1263,8 +1251,8 @@ void Unit::Kill(Unit* killer, Unit* victim, DamageEffectType damagetype, SpellEn
             DEBUG_FILTER_LOG(LOG_FILTER_DAMAGE, "SET JUST_DIED");
             victim->SetDeathState(JUST_DIED);
 
-#ifdef ENABLE_HARDCORE
-            sHardcoreMgr.OnPlayerDeath(playerVictim, killer);
+#ifdef ENABLE_MODULES
+            sModuleMgr.OnDeath(playerVictim, killer);
 #endif
         }
 
@@ -1291,10 +1279,6 @@ void Unit::Kill(Unit* killer, Unit* victim, DamageEffectType damagetype, SpellEn
                     outdoorPvP->HandlePlayerKill(responsiblePlayer, playerVictim);
             }
         }
-
-#ifdef ENABLE_ACHIEVEMENTS
-        sAchievementsMgr.OnUnitKill(killer, responsiblePlayer, playerVictim);
-#endif
     }
     else                                                // Killed creature
         JustKilledCreature(killer, static_cast<Creature*>(victim), responsiblePlayer);
@@ -1302,6 +1286,10 @@ void Unit::Kill(Unit* killer, Unit* victim, DamageEffectType damagetype, SpellEn
     // stop combat
     DEBUG_FILTER_LOG(LOG_FILTER_DAMAGE, "DealDamageAttackStop");
     victim->CombatStop();
+
+#ifdef ENABLE_MODULES
+    sModuleMgr.OnKill(killer, victim);
+#endif
 }
 
 void Unit::HandleDamageDealt(Unit* dealer, Unit* victim, uint32& damage, CleanDamage const* cleanDamage, DamageEffectType damagetype, SpellSchoolMask damageSchoolMask, SpellEntry const* spellProto, bool duel_hasEnded)
@@ -3419,6 +3407,11 @@ float Unit::CalculateEffectiveDodgeChance(const Unit* attacker, WeaponAttackType
 {
     float chance = 0.0f;
 
+#ifdef ENABLE_MODULES
+    if (sModuleMgr.OnCalculateEffectiveDodgeChance(this, attacker, attType, ability, chance))
+        return chance;
+#endif
+
     chance += GetDodgeChance();
     // Own chance appears to be zero / below zero / unmeaningful for some reason (debuffs?): skip calculation, unit is incapable
     if (chance < 0.005f)
@@ -3430,10 +3423,6 @@ float Unit::CalculateEffectiveDodgeChance(const Unit* attacker, WeaponAttackType
     const bool isPlayerOrPet = HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
     const uint32 skill = (weapon ? attacker->GetWeaponSkillValue(attType, this) : attacker->GetSkillMaxForLevel(this));
     int32 difference = int32(GetDefenseSkillValue(attacker) - skill);
-
-#ifdef ENABLE_IMMERSIVE
-    difference = sImmersiveMgr.CalculateEffectiveChance(difference, attacker, this, IMMERSIVE_EFFECTIVE_CHANCE_DODGE);
-#endif
 
     // Defense/weapon skill factor: for players and NPCs
     float factor = 0.04f;
@@ -3453,6 +3442,11 @@ float Unit::CalculateEffectiveParryChance(const Unit* attacker, WeaponAttackType
 {
     float chance = 0.0f;
 
+#ifdef ENABLE_MODULES
+    if (sModuleMgr.OnCalculateEffectiveParryChance(this, attacker, attType, ability, chance))
+        return chance;
+#endif
+
     if (attType == RANGED_ATTACK)
         return 0.0f;
 
@@ -3467,10 +3461,6 @@ float Unit::CalculateEffectiveParryChance(const Unit* attacker, WeaponAttackType
     const bool isPlayerOrPet = HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
     const uint32 skill = (weapon ? attacker->GetWeaponSkillValue(attType, this) : attacker->GetSkillMaxForLevel(this));
     int32 difference = int32(GetDefenseSkillValue(attacker) - skill);
-
-#ifdef ENABLE_IMMERSIVE
-    difference = sImmersiveMgr.CalculateEffectiveChance(difference, attacker, this, IMMERSIVE_EFFECTIVE_CHANCE_PARRY);
-#endif
 
     // Defense/weapon skill factor: for players and NPCs
     float factor = 0.04f;
@@ -3494,6 +3484,11 @@ float Unit::CalculateEffectiveBlockChance(const Unit* attacker, WeaponAttackType
 {
     float chance = 0.0f;
 
+#ifdef ENABLE_MODULES
+    if (sModuleMgr.OnCalculateEffectiveBlockChance(this, attacker, attType, ability, chance))
+        return chance;
+#endif
+
     chance += GetBlockChance();
     // Own chance appears to be zero / below zero / unmeaningful for some reason (debuffs?): skip calculation, unit is incapable
     if (chance < 0.005f)
@@ -3505,10 +3500,6 @@ float Unit::CalculateEffectiveBlockChance(const Unit* attacker, WeaponAttackType
     const bool isPlayerOrPet = HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
     const uint32 skill = (weapon ? attacker->GetWeaponSkillValue(attType, this) : attacker->GetSkillMaxForLevel(this));
     int32 difference = int32(GetDefenseSkillValue(attacker) - skill);
-
-#ifdef ENABLE_IMMERSIVE
-    difference = sImmersiveMgr.CalculateEffectiveChance(difference, attacker, this, IMMERSIVE_EFFECTIVE_CHANCE_BLOCK);
-#endif
 
     // Defense/weapon skill factor: for players and NPCs
     float factor = 0.04f;
@@ -3993,6 +3984,11 @@ float Unit::CalculateEffectiveCritChance(const Unit* victim, WeaponAttackType at
 {
     float chance = 0.0f;
 
+#ifdef ENABLE_MODULES
+    if (sModuleMgr.OnCalculateEffectiveCritChance(this, victim, attType, ability, chance))
+        return chance;
+#endif
+
     chance += (ability ? GetCritChance(ability, SPELL_SCHOOL_MASK_NORMAL) : GetCritChance(attType));
     // Own chance appears to be zero / below zero / unmeaningful for some reason (debuffs?): skip calculation, unit is incapable
     if (chance < 0.005f)
@@ -4009,10 +4005,6 @@ float Unit::CalculateEffectiveCritChance(const Unit* victim, WeaponAttackType at
     // weapon skill does not benefit crit% vs NPCs
     const uint32 skill = (weapon && !vsPlayerOrPet ? GetWeaponSkillValue(attType, victim) : GetSkillMaxForLevel(victim));
     int32 difference = int32(skill - victim->GetDefenseSkillValue(this));
-
-#ifdef ENABLE_IMMERSIVE
-    difference = sImmersiveMgr.CalculateEffectiveChance(difference, this, victim, IMMERSIVE_EFFECTIVE_CHANCE_CRIT);
-#endif
 
     // Weapon skill factor: for players and NPCs
     float factor = 0.04f;
@@ -4036,6 +4028,11 @@ float Unit::CalculateEffectiveMissChance(const Unit *victim, WeaponAttackType at
 {
     float chance = 0.0f;
 
+#ifdef ENABLE_MODULES
+    if (sModuleMgr.OnCalculateEffectiveMissChance(this, victim, attType, ability, m_currentSpells, SPELL_PARTIAL_RESIST_DISTRIBUTION, chance))
+        return chance;
+#endif
+
     chance += (ability ? victim->GetMissChance(ability, SPELL_SCHOOL_MASK_NORMAL) : victim->GetMissChance(attType));
     // Victim's own chance appears to be zero / below zero / unmeaningful for some reason (debuffs?): skip calculation, unit can't be missed
     if (chance < 0.005f)
@@ -4051,10 +4048,6 @@ float Unit::CalculateEffectiveMissChance(const Unit *victim, WeaponAttackType at
     const bool vsPlayerOrPet = victim->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
     const uint32 skill = (weapon ? GetWeaponSkillValue(attType, victim) : GetSkillMaxForLevel(victim));
     int32 difference = int32(victim->GetDefenseSkillValue(this) - skill);
-
-#ifdef ENABLE_IMMERSIVE
-    difference = sImmersiveMgr.CalculateEffectiveChance(difference, this, victim, IMMERSIVE_EFFECTIVE_CHANCE_MISS);
-#endif
 
     // Defense/weapon skill factor: for players and NPCs
     float factor = 0.04f;
@@ -4128,6 +4121,12 @@ float Unit::CalculateSpellMissChance(const Unit* victim, SpellSchoolMask schoolM
         return 0.0f;
 
     float chance = 0.0f;
+
+#ifdef ENABLE_MODULES
+    if (sModuleMgr.OnCalculateSpellMissChance(this, victim, schoolMask, spell, chance))
+        return chance;
+#endif
+
     const float minimum = 1.0f; // Pre-WotLK: unavoidable spell miss is at least 1%
 
     if (spell->HasAttribute(SPELL_ATTR_EX3_NORMAL_RANGED_ATTACK) || spell->DmgClass == SPELL_DAMAGE_CLASS_MELEE || spell->DmgClass == SPELL_DAMAGE_CLASS_RANGED)
@@ -4140,9 +4139,6 @@ float Unit::CalculateSpellMissChance(const Unit* victim, SpellSchoolMask schoolM
     // Level difference: positive adds to miss chance, negative substracts
     const bool vsPlayerOrPet = victim->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
     int32 difference = int32(victim->GetLevelForTarget(this) - GetLevelForTarget(victim));
-#ifdef ENABLE_IMMERSIVE
-    difference = sImmersiveMgr.CalculateEffectiveChance(difference, this, victim, IMMERSIVE_EFFECTIVE_CHANCE_SPELL_MISS);
-#endif
 
     // Level difference factor: 1% per level
     uint8 factor = 1;
@@ -7342,8 +7338,8 @@ int32 Unit::DealHeal(Unit* pVictim, uint32 addhealth, SpellEntry const* spellPro
     if (pVictim->AI())
         pVictim->AI()->HealedBy(this, addhealth);
 
-#ifdef ENABLE_ACHIEVEMENTS
-    sAchievementsMgr.OnUnitDealHeal(unit, pVictim, gain, addhealth);
+#ifdef ENABLE_MODULES
+    sModuleMgr.OnDealHeal(unit, pVictim, gain, addhealth);
 #endif
 
     return gain;
@@ -12482,14 +12478,15 @@ float Unit::GetAttackDistance(Unit const* target) const
     if (aggroRate == 0)
         return 0.0f;
 
+#ifdef ENABLE_MODULES
+    if (sModuleMgr.OnGetAttackDistance(this, target, aggroRate))
+        return aggroRate;
+#endif
+
     uint32 playerlevel = target->GetLevelForTarget(this);
     uint32 creaturelevel = GetLevelForTarget(target);
 
     int32 leveldif = int32(playerlevel) - int32(creaturelevel);
-
-#ifdef ENABLE_IMMERSIVE
-    leveldif = sImmersiveMgr.CalculateEffectiveChance(leveldif, this, target, IMMERSIVE_EFFECTIVE_ATTACK_DISTANCE);
-#endif
 
     // "The maximum Aggro Radius has a cap of 25 levels under. Example: A level 30 char has the same Aggro Radius of a level 5 char on a level 60 mob."
     if (leveldif < -25)

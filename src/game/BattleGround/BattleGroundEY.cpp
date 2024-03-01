@@ -29,6 +29,10 @@
 #include "Maps/MapManager.h"
 #include "AI/ScriptDevAI/include/sc_grid_searchers.h"
 
+#ifdef ENABLE_MODULES
+#include "ModuleMgr.h"
+#endif
+
 BattleGroundEY::BattleGroundEY(): m_flagState(), m_honorTicks(0), m_flagRespawnTimer(0), m_resourceUpdateTimer(0)
 {
     // set battleground start message id
@@ -79,6 +83,10 @@ void BattleGroundEY::StartingEventOpenDoors()
     // setup graveyards
     GetBgMap()->GetGraveyardManager().SetGraveYardLinkTeam(GRAVEYARD_EY_MAIN_ALLIANCE, EY_ZONE_ID_MAIN, ALLIANCE);
     GetBgMap()->GetGraveyardManager().SetGraveYardLinkTeam(GRAVEYARD_EY_MAIN_HORDE, EY_ZONE_ID_MAIN, HORDE);
+
+#ifdef ENABLE_MODULES
+    sModuleMgr.OnStartBattleGround(this);
+#endif
 }
 
 void BattleGroundEY::AddPoints(Team team, uint32 points)
@@ -606,6 +614,10 @@ void BattleGroundEY::UpdatePlayerScore(Player* source, uint32 type, uint32 value
             BattleGround::UpdatePlayerScore(source, type, value);
             break;
     }
+
+#ifdef ENABLE_MODULES
+    sModuleMgr.OnUpdatePlayerScore(this, source, type, value);
+#endif
 }
 
 Team BattleGroundEY::GetPrematureWinner()
