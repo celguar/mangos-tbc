@@ -20943,6 +20943,11 @@ bool Player::isHonorOrXPTarget(Unit* pVictim) const
 
 void Player::RewardSinglePlayerAtKill(Unit* pVictim)
 {
+#ifdef ENABLE_MODULES
+    if (!sModuleMgr.OnPreRewardPlayerAtKill(this, pVictim))
+    {
+#endif
+
     // honor can be in PvP and !PvP (racial leader) cases
     RewardHonor(pVictim, 1);
 
@@ -20959,11 +20964,12 @@ void Player::RewardSinglePlayerAtKill(Unit* pVictim)
         // normal creature (not pet/etc) can be only in !PvP case
         if (CreatureInfo const* normalInfo = creatureVictim->GetCreatureInfo())
             KilledMonster(normalInfo, creatureVictim);
+    }
 
 #ifdef ENABLE_MODULES
-        sModuleMgr.OnRewardSinglePlayerAtKill(this, pVictim);
-#endif
     }
+    sModuleMgr.OnRewardPlayerAtKill(this, pVictim);
+#endif
 }
 
 void Player::RewardPlayerAndGroupAtEventCredit(uint32 creature_id, WorldObject* pRewardSource)
