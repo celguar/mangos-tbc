@@ -77,9 +77,9 @@
 #endif
 
 #ifdef ENABLE_PLAYERBOTS
-#include "AhBot.h"
-#include "PlayerbotAIConfig.h"
-#include "RandomPlayerbotMgr.h"
+#include "ahbot/AhBot.h"
+#include "playerbot/PlayerbotAIConfig.h"
+#include "playerbot/RandomPlayerbotMgr.h"
 #endif
 
 #ifdef ENABLE_MODULES
@@ -1605,7 +1605,7 @@ void World::SetInitialWorldSettings()
     m_timers[WUPDATE_METRICS].SetInterval(1 * IN_MILLISECONDS);
 #endif // BUILD_METRICS
 
-#ifdef BUILD_PLAYERBOT
+#ifdef BUILD_DEPRECATED_PLAYERBOT
     PlayerbotMgr::SetInitialWorldSettings();
 #endif
 #ifdef ENABLE_PLAYERBOTS

@@ -41,7 +41,7 @@
 #include "AI/ScriptDevAI/ScriptDevAIMgr.h"
 
 #ifdef ENABLE_PLAYERBOTS
-#include "playerbot.h"
+#include "playerbot/playerbot.h"
 #endif
 
 #ifdef BUILD_METRICS

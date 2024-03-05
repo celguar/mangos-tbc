@@ -61,16 +61,16 @@ else()
   message(STATUS "Build METRICs         : No  (default)")
 endif()
 
-if(BUILD_PLAYERBOT)
-  message(STATUS "Build Playerbot       : Yes")
+if(BUILD_DEPRECATED_PLAYERBOT)
+  message(STATUS "Build Old Playerbot   : Yes")
 else()
-  message(STATUS "Build Playerbot       : No  (default)")
+  message(STATUS "Build Old Playerbot   : No  (default)")
 endif()
 
-if(BUILD_IKE3_BOTS)
-  message(STATUS "Build ike3 Playerbots : Yes")
+if(BUILD_PLAYERBOTS)
+  message(STATUS "Build Playerbots      : Yes")
 else()
-  message(STATUS "Build ike3 Playerbots : No  (default)")
+  message(STATUS "Build Playerbots      : No  (default)")
 endif()
 
 # Modules

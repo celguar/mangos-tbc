@@ -65,15 +65,15 @@
 #include "World/WorldState.h"
 #include "Anticheat/Anticheat.hpp"
 
-#ifdef BUILD_PLAYERBOT
+#ifdef BUILD_DEPRECATED_PLAYERBOT
 #include "PlayerBot/Base/PlayerbotAI.h"
 #include "PlayerBot/Base/PlayerbotMgr.h"
 #include "Config/Config.h"
 #endif
 
 #ifdef ENABLE_PLAYERBOTS
-#include "playerbot.h"
-#include "PlayerbotAIConfig.h"
+#include "playerbot/playerbot.h"
+#include "playerbot/PlayerbotAIConfig.h"
 #endif
 
 #ifdef ENABLE_MODULES
@@ -96,7 +96,7 @@
 #define SKILL_PERM_BONUS(x)    int16(PAIR32_HIPART(x))
 #define MAKE_SKILL_BONUS(t, p) MAKE_PAIR32(t,p)
 
-#ifdef BUILD_PLAYERBOT
+#ifdef BUILD_DEPRECATED_PLAYERBOT
 extern Config botConfig;
 #endif
 
@@ -486,7 +486,7 @@ void TradeData::SetAccepted(bool state, bool crosssend /*= false*/)
 
 Player::Player(WorldSession* session): Unit(), m_taxiTracker(*this), m_mover(this), m_camera(this), m_reputationMgr(this), m_launched(false)
 {
-#ifdef BUILD_PLAYERBOT
+#ifdef BUILD_DEPRECATED_PLAYERBOT
     m_playerbotAI = 0;
     m_playerbotMgr = 0;
 #endif
@@ -705,7 +705,7 @@ Player::~Player()
         for (BoundInstancesMap::iterator itr = m_boundInstance.begin(); itr != m_boundInstance.end(); ++itr)
             itr->second.state->RemovePlayer(this);
 
-#ifdef BUILD_PLAYERBOT
+#ifdef BUILD_DEPRECATED_PLAYERBOT
     if (m_playerbotAI)
     {
         delete m_playerbotAI;
@@ -1674,7 +1674,7 @@ void Player::Update(const uint32 diff)
             GetVisibilityData().SetVisibilityDistanceOverride(VisibilityDistanceType::Normal);
     }
 
-#ifdef BUILD_PLAYERBOT
+#ifdef BUILD_DEPRECATED_PLAYERBOT
     if (m_playerbotAI)
         m_playerbotAI->UpdateAI(diff);
     else if (m_playerbotMgr)
@@ -2020,7 +2020,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
 
     MapEntry const* mEntry = sMapStore.LookupEntry(mapid);  // Validity checked in IsValidMapCoord
 
-#ifdef BUILD_PLAYERBOT
+#ifdef BUILD_DEPRECATED_PLAYERBOT
     // If this user has bots, tell them to stop following master
     // so they don't try to follow the master after the master teleports
     if (GetPlayerbotMgr())
@@ -12588,7 +12588,7 @@ void Player::PrepareGossipMenu(WorldObject* pSource, uint32 menuId, bool forceQu
                     break;                                  // no checks
                 case GOSSIP_OPTION_BOT:
                 {
-#ifdef BUILD_PLAYERBOT
+#ifdef BUILD_DEPRECATED_PLAYERBOT
                     if (botConfig.GetBoolDefault("PlayerbotAI.DisableBots", false) && !pCreature->isInnkeeper())
                     {
                         ChatHandler(this).PSendSysMessage("|cffff0000Playerbot system is currently disabled!");
@@ -12866,7 +12866,7 @@ void Player::OnGossipSelect(WorldObject* pSource, uint32 gossipListId, uint32 me
         case GOSSIP_OPTION_AUCTIONEER:
             GetSession()->SendAuctionHello(((Creature*)pSource));
             break;
-#ifdef BUILD_PLAYERBOT
+#ifdef BUILD_DEPRECATED_PLAYERBOT
         case GOSSIP_OPTION_BOT:
         {
             // DEBUG_LOG("GOSSIP_OPTION_BOT");
