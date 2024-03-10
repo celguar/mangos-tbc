@@ -1391,6 +1391,11 @@ void WorldSession::AssignAnticheat(std::unique_ptr<SessionAnticheatInterface>&& 
     m_anticheat = std::move(anticheat);
 }
 
+void WorldSession::SetDelayedAnticheat(std::unique_ptr<SessionAnticheatInterface>&& anticheat)
+{
+    m_delayedAnticheat = std::move(anticheat);
+}
+
 #ifdef BUILD_DEPRECATED_PLAYERBOT
 
 void WorldSession::SetNoAnticheat()
