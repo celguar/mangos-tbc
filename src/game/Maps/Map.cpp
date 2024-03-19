@@ -1131,7 +1131,10 @@ void Map::Update(const uint32& t_diff)
 #endif
 
     // non-player active objects
+#ifdef ENABLE_PLAYERBOTS
     bool updateObj = urand(0, (HasRealPlayers() ? avgDiff : (avgDiff * 3))) < 10;
+#endif
+
     if (!m_activeNonPlayers.empty())
     {
         for (m_activeNonPlayersIter = m_activeNonPlayers.begin(); m_activeNonPlayersIter != m_activeNonPlayers.end();)

@@ -1060,6 +1060,7 @@ void PathFinder::createFilter()
 #ifdef ENABLE_PLAYERBOTS
     if (!m_sourceUnit || m_sourceUnit->GetTypeId() == TYPEID_PLAYER)
     {
+#ifdef ENABLE_PLAYERBOTS
         // perfect support not possible, just stay 'safe'
         if (!m_sourceUnit || ((Player*)m_sourceUnit)->GetPlayerbotAI()) //Blank or bot-navigation
         {
@@ -1072,9 +1073,12 @@ void PathFinder::createFilter()
         }
         else
         {
+#endif
             includeFlags |= (NAV_GROUND | NAV_WATER | NAV_GROUND_STEEP);
             excludeFlags |= (NAV_MAGMA_SLIME);
+#ifdef ENABLE_PLAYERBOTS
         }
+#endif
     }
     else if (m_sourceUnit->GetTypeId() == TYPEID_UNIT)
     {

@@ -269,9 +269,9 @@ class WorldSession
 #else
 #ifdef ENABLE_PLAYERBOTS
         // Players connected without socket are bot
-        const std::string GetRemoteAddress() const { return m_Socket ? m_Socket->GetRemoteAddress() : "disconnected/bot"; }
+        const std::string GetRemoteAddress() const { return m_socket ? m_socket->GetRemoteAddress() : "disconnected/bot"; }
 #else
-        const std::string GetRemoteAddress() const { return m_Socket ? m_Socket->GetRemoteAddress() : "disconnected"; }
+        const std::string GetRemoteAddress() const { return m_socket ? m_socket->GetRemoteAddress() : "disconnected"; }
 #endif
 #endif
         const std::string& GetLocalAddress() const { return m_localAddress; }
@@ -282,6 +282,7 @@ class WorldSession
 
         void InitializeAnticheat(const BigNumber& K);
         void AssignAnticheat(std::unique_ptr<SessionAnticheatInterface>&& anticheat);
+        void SetDelayedAnticheat(std::unique_ptr<SessionAnticheatInterface>&& anticheat);
         SessionAnticheatInterface* GetAnticheat() const { return m_anticheat.get(); }
 
 #if defined(BUILD_DEPRECATED_PLAYERBOT) || defined(ENABLE_PLAYERBOTS)
@@ -973,6 +974,7 @@ class WorldSession
         uint32 m_orderCounter;
         uint32 m_lastAnticheatUpdate;
         std::unique_ptr<SessionAnticheatInterface> m_anticheat;
+        std::unique_ptr<SessionAnticheatInterface> m_delayedAnticheat;
 
         time_t _logoutTime;                                 // when logout will be processed after a logout request
         time_t m_kickTime;
