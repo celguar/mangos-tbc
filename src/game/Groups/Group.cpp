@@ -37,6 +37,10 @@
 #include "PlayerBot/Base/PlayerbotMgr.h"
 #endif
 
+#ifdef BUILD_VOICECHAT
+#include "VoiceChat/VoiceChatMgr.h"
+#endif
+
 #ifdef ENABLE_MODULES
 #include "ModuleMgr.h"
 #endif
@@ -233,6 +237,13 @@ void Group::ConvertToRaid()
     for (member_citerator citr = m_memberSlots.begin(); citr != m_memberSlots.end(); ++citr)
         if (Player* player = sObjectMgr.GetPlayer(citr->guid))
             player->UpdateForQuestWorldObjects();
+
+#ifdef BUILD_VOICECHAT
+    if (!IsBattleGroup())
+    {
+        sVoiceChatMgr.ConvertToRaidChannel(GetId());
+    }
+#endif
 }
 
 bool Group::AddInvite(Player* player)
@@ -376,6 +387,27 @@ bool Group::AddMember(ObjectGuid guid, const char* name)
             WorldPacket groupDataPacket = groupData.BuildPacket(0, false);
             player->SendDirectMessage(groupDataPacket);
         }
+
+#ifdef BUILD_VOICECHAT
+        if (player->GetSession()->IsVoiceChatEnabled())
+        {
+            if (!IsBattleGroup())
+            {
+                if (IsRaidGroup())
+                {
+                    sVoiceChatMgr.AddToRaidVoiceChatChannel(guid, GetId());
+                }
+                else
+                {
+                    sVoiceChatMgr.AddToGroupVoiceChatChannel(guid, GetId());
+                }
+            }
+            else
+            {
+                sVoiceChatMgr.AddToBattlegroundVoiceChatChannel(guid);
+            }
+        }
+#endif
     }
 
     return true;
@@ -453,6 +485,18 @@ uint32 Group::RemoveMember(ObjectGuid guid, uint8 method)
         });
 
         SendUpdate();
+
+#ifdef BUILD_VOICECHAT
+        if (!IsBattleGroup())
+        {
+            sVoiceChatMgr.RemoveFromGroupVoiceChatChannel(guid, GetId());
+            sVoiceChatMgr.RemoveFromRaidVoiceChatChannel(guid, GetId());
+        }
+        else
+        {
+            sVoiceChatMgr.RemoveFromBattlegroundVoiceChatChannel(guid);
+        }
+#endif
     }
     // if group before remove <= 2 disband it
     else
@@ -540,6 +584,21 @@ void Group::Disband(bool hideDestroy)
     _updateLeaderFlag(true);
     m_leaderGuid.Clear();
     m_leaderName.clear();
+
+#ifdef BUILD_VOICECHAT
+    if (!IsBattleGroup())
+    {
+        sVoiceChatMgr.DeleteGroupVoiceChatChannel(GetId());
+        sVoiceChatMgr.DeleteRaidVoiceChatChannel(GetId());
+    }
+    else
+    {
+        if (m_bgGroup->GetBgRaid(ALLIANCE) == this)
+            sVoiceChatMgr.DeleteBattlegroundVoiceChatChannel(m_bgGroup->GetInstanceId(), ALLIANCE);
+        else if (m_bgGroup->GetBgRaid(HORDE) == this)
+            sVoiceChatMgr.DeleteBattlegroundVoiceChatChannel(m_bgGroup->GetInstanceId(), HORDE);
+    }
+#endif
 }
 
 void Group::SetTargetIcon(uint8 id, ObjectGuid targetGuid)

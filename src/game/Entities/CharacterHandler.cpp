@@ -41,6 +41,10 @@
 #include "Anticheat/Anticheat.hpp"
 #include "Mails/Mail.h"
 
+#ifdef BUILD_VOICECHAT
+#include "VoiceChat/VoiceChatMgr.h"
+#endif
+
 #ifdef BUILD_DEPRECATED_PLAYERBOT
 #include "PlayerBot/Base/PlayerbotMgr.h"
 #endif
@@ -787,7 +791,11 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
 
     data.Initialize(SMSG_FEATURE_SYSTEM_STATUS, 2);         // added in 2.2.0
     data << uint8(2);                                       // Can complain (0 = disabled, 1 = enabled, don't auto ignore, 2 = enabled, auto ignore)
-    data << uint8(0);                                       // Voice chat is enabled
+#ifdef BUILD_VOICECHAT
+    data << uint8(sVoiceChatMgr.CanSeeVoiceChat());         // Voice chat is available
+#else
+    data << uint8(0);                                       // Voice chat is disabled
+#endif
     SendPacket(data);
 
     // Send Spam records
@@ -1135,6 +1143,14 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
     if (!pCurrChar->IsStandState() && !pCurrChar->IsStunned())
         pCurrChar->SetStandState(UNIT_STAND_STATE_STAND);
 
+#ifdef BUILD_VOICECHAT
+    // join available voice channels
+    if (IsVoiceChatEnabled())
+    {
+        sVoiceChatMgr.JoinAvailableVoiceChatChannels(this);
+    }
+#endif
+
     //Start Solocraft Functions
     bool SoloCraftEnable = sWorld.getConfig(CONFIG_BOOL_SOLOCRAFT_ENABLED);
     bool SoloCraftAnnounceModule = sWorld.getConfig(CONFIG_BOOL_SOLOCRAFT_ANNOUNCE);
@@ -1199,7 +1215,11 @@ void WorldSession::HandlePlayerReconnect()
 
     data.Initialize(SMSG_FEATURE_SYSTEM_STATUS, 2);         // added in 2.2.0
     data << uint8(2);                                       // Can complain (0 = disabled, 1 = enabled, don't auto ignore, 2 = enabled, auto ignore)
-    data << uint8(0);                                       // Voice chat is enabled
+#ifdef BUILD_VOICECHAT
+    data << uint8(sVoiceChatMgr.CanSeeVoiceChat());         // Voice chat is available
+#else
+    data << uint8(0);                                       // Voice chat is disabled
+#endif
     SendPacket(data);
 
     // Send Spam records
@@ -1290,6 +1310,14 @@ void WorldSession::HandlePlayerReconnect()
     // Mark self for unit flags update to ensure re-application of combat flag at own client
     if (inCombat)
         _player->ForceValuesUpdateAtIndex(UNIT_FIELD_FLAGS);
+        
+#ifdef BUILD_VOICECHAT
+    // join available voice channels
+    if (IsVoiceChatEnabled())
+    {
+        sVoiceChatMgr.JoinAvailableVoiceChatChannels(this);
+    }
+#endif
 
     m_playerLoading = false;
 }
