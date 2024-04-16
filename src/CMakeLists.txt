@@ -73,18 +73,18 @@ if(BUILD_MODULES)
 
       FetchContent_Declare(
         ${LOWER_MODULE_NAME}
-        SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/${LOWER_MODULE_NAME}"
+		SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/modules/${LOWER_MODULE_NAME}"
         GIT_REPOSITORY "${MODULE_URL}"
         GIT_TAG "main"
       )
 
-      FetchContent_GetProperties(${LOWER_MODULE_NAME})
+	  FetchContent_GetProperties(${LOWER_MODULE_NAME})
       if(NOT ${LOWER_MODULE_NAME}_POPULATED)
         message(STATUS "Fetching ${LOWER_MODULE_NAME} module...")
         FetchContent_Populate(${LOWER_MODULE_NAME})
         message(STATUS "${LOWER_MODULE_NAME} module fetched and populated in ${CMAKE_CURRENT_SOURCE_DIR}/modules/${LOWER_MODULE_NAME}")
       endif()
-  
+	
       add_subdirectory(${CMAKE_SOURCE_DIR}/src/modules/${LOWER_MODULE_NAME})
     else()
       if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/modules/${LOWER_MODULE_NAME})

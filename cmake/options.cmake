@@ -14,7 +14,7 @@ option(BUILD_MODULES                        "Build module system"               
 foreach(MODULE_NAME ${MODULE_NAMES})
   if(NOT ${MODULE_NAME} STREQUAL "MODULES")
     string(TOLOWER ${MODULE_NAME} LOWER_MODULE_NAME)
-  option(BUILD_MODULE_${MODULE_NAME} "Build ${LOWER_MODULE_NAME} module" OFF)
+	option(BUILD_MODULE_${MODULE_NAME} "Build ${LOWER_MODULE_NAME} module" OFF)
   endif()
 endforeach()
 
@@ -46,7 +46,7 @@ message(STATUS
     BUILD_EXTRACTORS        Build map/dbc/vmap/mmap extractor
     BUILD_PLAYERBOTS        Build Playerbots mod
     BUILD_AHBOT             Build Auction House Bot mod
-    BUILD_MODULES			      Build module system
+    BUILD_MODULES           Build module system
     BUILD_METRICS           Build Metrics, generate data for Grafana
     BUILD_RECASTDEMOMOD     Build map/vmap/mmap viewer
     BUILD_GIT_ID            Build git_id

@@ -76,7 +76,7 @@ endif()
 # Modules
 if(BUILD_MODULES)
   message(STATUS "Build Modules         : Yes")
-
+  
   foreach(MODULE_NAME ${MODULE_NAMES})
     if(NOT ${MODULE_NAME} STREQUAL "MODULES")
       string(TOLOWER ${MODULE_NAME} LOWER_MODULE_NAME)
@@ -87,7 +87,7 @@ if(BUILD_MODULES)
       endif()
 	endif()
   endforeach()
-
+  
 else()
   message(STATUS "Build Modules         : No  (default)")
 endif()
