@@ -83,6 +83,10 @@
 #include "playerbot/RandomPlayerbotMgr.h"
 #endif
 
+#ifdef ENABLE_MODULES
+#include "ModuleMgr.h"
+#endif
+
 #include <algorithm>
 #include <mutex>
 #include <cstdarg>

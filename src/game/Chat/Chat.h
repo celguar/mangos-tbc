@@ -101,11 +101,8 @@ class ChatHandler
 
         bool HasSentErrorMessage() const { return sentErrorMessage; }
 
-        WorldSession* GetSession() { return m_session; }
-
 #ifdef ENABLE_PLAYERBOTS
         WorldSession* GetSession() { return m_session; }
-        bool HandlePerfMonCommand(char* args);
 #endif
 
         /**

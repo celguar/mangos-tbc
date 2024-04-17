@@ -307,15 +307,6 @@ void WorldSession::HandleMoveTeleportAckOpcode(WorldPacket& recv_data)
     plMover->SetPosition(dest.coord_x, dest.coord_y, dest.coord_z, dest.orientation, true);
     plMover->m_movementInfo.ChangePosition(dest.coord_x, dest.coord_y, dest.coord_z, dest.orientation);
 
-#ifdef ENABLE_PLAYERBOTS
-    // interrupt moving for bot if any
-    if (plMover->GetPlayerbotAI() && !plMover->GetMotionMaster()->empty())
-    {
-        if (MovementGenerator* movgen = plMover->GetMotionMaster()->top())
-            movgen->Interrupt(*plMover);
-    }
-#endif
-
     plMover->SetFallInformation(0, dest.coord_z);
 
 #ifdef ENABLE_PLAYERBOTS
@@ -359,14 +350,6 @@ void WorldSession::HandleMoveTeleportAckOpcode(WorldPacket& recv_data)
     // honorless target
     if (plMover->pvpInfo.inPvPEnforcedArea)
         plMover->CastSpell(plMover, 2479, TRIGGERED_OLD_TRIGGERED);
-
-#ifdef ENABLE_PLAYERBOTS
-    // reset moving for bot if any
-    if (plMover->GetPlayerbotAI() && !plMover->GetMotionMaster()->empty())
-    {
-        if (MovementGenerator* movgen = plMover->GetMotionMaster()->top())
-            movgen->Reset(*plMover);
-    }
 #endif
 
     m_anticheat->Teleport({ dest.coord_x, dest.coord_y, dest.coord_z, dest.orientation });

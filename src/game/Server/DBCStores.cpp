@@ -84,11 +84,6 @@ DBCStorage <DurabilityCostsEntry> sDurabilityCostsStore(DurabilityCostsfmt);
 
 DBCStorage <EmotesEntry> sEmotesStore(EmotesEntryfmt);
 DBCStorage <EmotesTextEntry> sEmotesTextStore(EmotesTextEntryfmt);
-#ifdef ENABLE_PLAYERBOTS
-typedef std::tuple<uint32, uint32, uint32> EmotesTextSoundKey;
-static std::map<EmotesTextSoundKey, EmotesTextSoundEntry const*> sEmotesTextSoundMap;
-DBCStorage <EmotesTextSoundEntry> sEmotesTextSoundStore(EmotesTextSoundEntryfmt);
-#endif
 
 #ifdef ENABLE_PLAYERBOTS
 typedef std::tuple<uint32, uint32, uint32> EmotesTextSoundKey;

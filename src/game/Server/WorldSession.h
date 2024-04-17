@@ -288,9 +288,6 @@ class WorldSession
 #if defined(BUILD_DEPRECATED_PLAYERBOT) || defined(ENABLE_PLAYERBOTS)
         void SetNoAnticheat();
 #endif
-#ifdef ENABLE_PLAYERBOTS
-        void SetNoAnticheat();
-#endif
 
         /// Session in auth.queue currently
         void SetInQueue(bool state) { m_inQueue = state; }
@@ -471,7 +468,6 @@ class WorldSession
         // Misc
         void SendKnockBack(Unit* who, float angle, float horizontalSpeed, float verticalSpeed);
         void SendPlaySpellVisual(ObjectGuid guid, uint32 spellArtKit) const;
-        void SendTeleportToObservers(float x, float y, float z, float orientation);
 
 #ifdef ENABLE_PLAYERBOTS
         void SendTeleportToObservers(float x, float y, float z, float orientation);
@@ -924,10 +920,6 @@ class WorldSession
 
         std::deque<uint32> GetOutOpcodeHistory();
         std::deque<uint32> GetIncOpcodeHistory();
-
-#ifdef ENABLE_PLAYERBOTS
-        void HandleBotPackets();
-#endif
 
         Messager<WorldSession>& GetMessager() { return m_messager; }
 

@@ -300,10 +300,6 @@ class Map : public GridRefManager<NGridType>
         uint32 GetPlayersCountExceptGMs() const;
         bool ActiveObjectsNearGrid(uint32 x, uint32 y) const;
 
-#ifdef ENABLE_PLAYERBOTS
-        bool HasRealPlayers() { return hasRealPlayers; }
-#endif
-
         /// Send a Packet to all players on a map
         void SendToPlayers(WorldPacket const& data) const;
         /// Send a Packet to all players in a zone. Return false if no player found
@@ -635,11 +631,6 @@ class Map : public GridRefManager<NGridType>
         ZoneDynamicInfoMap m_zoneDynamicInfo;
         ZoneDynamicInfoMap m_areaDynamicInfo;
         uint32 m_defaultLight;
-
-        std::vector<ContinentArea> m_activeAreas;
-        std::vector<uint32> m_activeZones;
-        uint32 m_activeAreasTimer;
-        bool hasRealPlayers;
 };
 
 class WorldMap : public Map

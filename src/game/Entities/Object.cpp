@@ -2615,7 +2615,6 @@ struct WorldObjectChangeAccumulator
             {
 #endif
             if (owner != &i_object && owner->HasAtClient(&i_object))
-#endif
                 i_object.BuildUpdateDataForPlayer(owner, i_updateDatas);
 #ifdef ENABLE_PLAYERBOTS
             }

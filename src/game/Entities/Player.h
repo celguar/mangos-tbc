@@ -1110,7 +1110,6 @@ class Player : public Unit
         Item* GetItemByEntry(uint32 item) const;
         Item* GetItemByPos(uint16 pos) const;
         Item* GetItemByPos(uint8 bag, uint8 slot) const;
-        Item* GetItemByEntry(uint32 item) const;
         uint32 GetItemDisplayIdInSlot(uint8 bag, uint8 slot) const;
         Item* GetWeaponForAttack(WeaponAttackType attackType) const { return GetWeaponForAttack(attackType, false, false); }
         Item* GetWeaponForAttack(WeaponAttackType attackType, bool nonbroken, bool useable) const;
@@ -1527,10 +1526,6 @@ class Player : public Unit
         void learnQuestRewardedSpells(Quest const* quest);
         void learnSpellHighRank(uint32 spellid);
         void learnClassLevelSpells(bool includeHighLevelQuestRewards = false);
-
-#ifdef ENABLE_PLAYERBOTS
-        void learnClassLevelSpells(bool includeHighLevelQuestRewards = false);
-#endif
 
         uint32 GetFreeTalentPoints() const { return GetUInt32Value(PLAYER_CHARACTER_POINTS1); }
         void SetFreeTalentPoints(uint32 points) { SetUInt32Value(PLAYER_CHARACTER_POINTS1, points); }
