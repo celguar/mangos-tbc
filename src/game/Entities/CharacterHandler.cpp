@@ -240,6 +240,20 @@ class CharacterHandler
                 delete holder;
                 return;
             }
+
+            ObjectGuid guid = ((LoginQueryHolder*)holder)->GetGuid();
+            session->HandlePlayerLogin((LoginQueryHolder*)holder);
+
+            Player* player = session->GetPlayer();
+            if (player)
+            {
+                player->CreatePlayerbotMgr();
+                player->GetPlayerbotMgr()->OnPlayerLogin(player);
+                sRandomPlayerbotMgr.OnPlayerLogin(player);
+            }
+#else
+            if (WorldSession* session = sWorld.FindSession(((LoginQueryHolder*)holder)->GetAccountId()))
+                session->HandlePlayerLogin((LoginQueryHolder*)holder);
 #endif
         }
 
