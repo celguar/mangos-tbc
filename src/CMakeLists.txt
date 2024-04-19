@@ -86,6 +86,7 @@ if(BUILD_VOICECHAT)
 else()
   if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/voicechat-server)
     file(REMOVE_RECURSE ${CMAKE_CURRENT_SOURCE_DIR}/voicechat-server)
+  endif()
 endif()
 
 # Install modules
