@@ -178,6 +178,10 @@ void Creature::AddToWorld()
     ///- Register the creature for guid lookup
     if (!IsInWorld())
     {
+#ifdef ENABLE_MODULES
+        sModuleMgr.OnAddToWorld(this);
+#endif
+
         if (IsUnit())
             GetMap()->GetObjectsStore().insert<Creature>(GetObjectGuid(), (Creature*)this);
         if (GetDbGuid())
@@ -1829,10 +1833,6 @@ bool Creature::LoadFromDB(uint32 dbGuid, Map* map, uint32 newGuid, uint32 forced
         if (now_tm.tm_mon == rabbit_day_tm.tm_mon && now_tm.tm_mday == rabbit_day_tm.tm_mday)
             CastSpell(this, 10710 + urand(0, 2), TRIGGERED_OLD_TRIGGERED);
     }
-
-#ifdef ENABLE_MODULES
-    sModuleMgr.OnAddToMap(this);
-#endif
 
     return true;
 }
