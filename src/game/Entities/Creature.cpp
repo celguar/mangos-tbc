@@ -1830,6 +1830,10 @@ bool Creature::LoadFromDB(uint32 dbGuid, Map* map, uint32 newGuid, uint32 forced
             CastSpell(this, 10710 + urand(0, 2), TRIGGERED_OLD_TRIGGERED);
     }
 
+#ifdef ENABLE_MODULES
+    sModuleMgr.OnAddToMap(this);
+#endif
+
     return true;
 }
 
