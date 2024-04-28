@@ -1663,6 +1663,11 @@ void World::SetInitialWorldSettings()
     auctionbot.Init();
 #endif
 #endif
+
+#ifdef ENABLE_MODULES
+    sModuleMgr.OnWorldInitialized();
+#endif
+
     sLog.outString("---------------------------------------");
     sLog.outString("      CMANGOS: World initialized       ");
     sLog.outString("---------------------------------------");
