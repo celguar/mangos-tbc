@@ -506,11 +506,6 @@ bool WorldSession::Update(uint32 /*diff*/)
         GetPlayer()->GetPlayerbotMgr()->UpdateSessions(0);
 #endif
 
-#ifdef ENABLE_PLAYERBOTS
-    if (GetPlayer() && GetPlayer()->GetPlayerbotMgr())
-        GetPlayer()->GetPlayerbotMgr()->UpdateSessions(0);
-#endif
-
     // check if we are safe to proceed with logout
     // logout procedure should happen only in World::UpdateSessions() method!!!
     switch (m_sessionState)
@@ -690,12 +685,6 @@ void WorldSession::LogoutPlayer()
 
         if (Loot* loot = sLootMgr.GetLoot(_player))
             loot->Release(_player);
-
-#ifdef ENABLE_PLAYERBOTS
-        if (_player->GetPlayerbotMgr() && (!_player->GetPlayerbotAI() || _player->GetPlayerbotAI()->IsRealPlayer()))
-            _player->GetPlayerbotMgr()->LogoutAllBots();
-        sRandomPlayerbotMgr.OnPlayerLogout(_player);
-#endif
 
         if (_player->GetDeathTimer())
         {
