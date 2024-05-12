@@ -384,7 +384,6 @@ void LoadDBCStores(const std::string& dataPath)
     LoadDBC(availableDbcLocales, bar, bad_dbc_files, sLFGDungeonStore,          dbcPath, "LFGDungeons.dbc");
 #endif
     LoadDBC(availableDbcLocales, bar, bad_dbc_files, sLightStore,               dbcPath, "Light.dbc");
-    LoadDBC(availableDbcLocales, bar, bad_dbc_files, sLFGDungeonStore,          dbcPath, "LFGDungeons.dbc");
     LoadDBC(availableDbcLocales, bar, bad_dbc_files, sLiquidTypeStore,          dbcPath, "LiquidType.dbc");
     LoadDBC(availableDbcLocales, bar, bad_dbc_files, sLockStore,                dbcPath, "Lock.dbc");
     LoadDBC(availableDbcLocales, bar, bad_dbc_files, sMailTemplateStore,        dbcPath, "MailTemplate.dbc");
