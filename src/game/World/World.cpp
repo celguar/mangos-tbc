@@ -133,7 +133,6 @@ World::World() : mail_timer(0), mail_timer_expires(0), m_NextDailyQuestReset(0),
     m_startTime = m_gameTime;
     m_maxActiveSessionCount = 0;
     m_maxQueuedSessionCount = 0;
-    m_maxDiff = 0;
 
     m_defaultDbcLocale = DEFAULT_LOCALE;
     m_availableDbcLocaleMask = 0;
@@ -1734,6 +1733,8 @@ void World::Update(uint32 diff)
     m_currentMSTime = WorldTimer::getMSTime();
     m_currentTime = std::chrono::time_point_cast<std::chrono::milliseconds>(Clock::now());
     m_currentDiff = diff;
+
+#ifdef ENABLE_PLAYERBOTS
     m_currentDiffSum += diff;
     m_currentDiffSumIndex++;
     m_histDiff.push_back(diff);
@@ -1759,6 +1760,7 @@ void World::Update(uint32 diff)
     {
         m_maxDiff = *std::max_element(m_histDiff.begin(), m_histDiff.end());
     }
+#endif
     /*
     if (m_currentDiffSum > 300000)
     {
