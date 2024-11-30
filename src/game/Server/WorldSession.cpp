@@ -228,15 +228,6 @@ void WorldSession::SendPacket(WorldPacket const& packet, bool forcedSend /*= fal
     }
 #endif
 
-#ifdef ENABLE_PLAYERBOTS
-    if (GetPlayer()) {
-        if (GetPlayer()->GetPlayerbotAI())
-            GetPlayer()->GetPlayerbotAI()->HandleBotOutgoingPacket(packet);
-        else if (GetPlayer()->GetPlayerbotMgr())
-            GetPlayer()->GetPlayerbotMgr()->HandleMasterOutgoingPacket(packet);
-    }
-#endif
-
     if (!m_socket || (m_sessionState != WORLD_SESSION_STATE_READY && !forcedSend))
     {
         //sLog.outDebug("Refused to send %s to %s", packet.GetOpcodeName(), _player ? _player->GetName() : "UKNOWN");
