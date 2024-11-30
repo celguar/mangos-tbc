@@ -413,10 +413,6 @@ bool WorldSession::Update(uint32 /*diff*/)
                 if (_player && _player->GetPlayerbotMgr())
                     _player->GetPlayerbotMgr()->HandleMasterIncomingPacket(*packet);
 #endif
-#ifdef ENABLE_PLAYERBOTS
-                    if (_player && _player->GetPlayerbotMgr())
-                        _player->GetPlayerbotMgr()->HandleMasterIncomingPacket(*packet);
-#endif
                 break;
             case STATUS_LOGGEDIN_OR_RECENTLY_LOGGEDOUT:
                 if (!_player && !m_playerRecentlyLogout)
@@ -836,17 +832,10 @@ void WorldSession::LogoutPlayer()
         SqlStatement stmt = CharacterDatabase.CreateStatement(updChars, "UPDATE characters SET online = 0 WHERE guid = ?");
         stmt.PExecute(guid);
 #else
-#ifdef ENABLE_PLAYERBOTS
-        // Set for only character instead of accountid
-        // Different characters can be alive as bots
-        stmt = CharacterDatabase.CreateStatement(updChars, "UPDATE characters SET online = 0 WHERE guid = ?");
-        stmt.PExecute(guid);
-#else
         ///- Since each account can only have one online character at any given time, ensure all characters for active account are marked as offline
         // No SQL injection as AccountId is uint32
         SqlStatement stmt = CharacterDatabase.CreateStatement(updChars, "UPDATE characters SET online = 0 WHERE account = ?");
         stmt.PExecute(GetAccountId());
-#endif
 #endif
 
         DEBUG_LOG("SESSION: Sent SMSG_LOGOUT_COMPLETE Message");
