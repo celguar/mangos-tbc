@@ -11076,11 +11076,11 @@ void Player::MoveItemToInventory(ItemPosCountVec const& dest, Item* pItem, bool 
         // if this original item then it need create record in inventory
         // in case trade we already have item in other player inventory
         pLastItem->SetState(in_characterInventoryDB ? ITEM_CHANGED : ITEM_NEW, this);
-    }
 
 #ifdef ENABLE_MODULES
-    sModuleMgr.OnMoveItemToInventory(this, pItem);
+        sModuleMgr.OnMoveItemToInventory(this, pLastItem);
 #endif
+    }
 }
 
 void Player::DestroyItem(uint8 bag, uint8 slot, bool update)
