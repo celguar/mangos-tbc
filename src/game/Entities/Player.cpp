@@ -10642,7 +10642,7 @@ Item* Player::StoreItem(ItemPosCountVec const& dest, Item* pItem, bool update)
     /* World of Warcraft Armory */
 
 #ifdef ENABLE_MODULES
-    sModuleMgr.OnStoreItem(this, pItem);
+    sModuleMgr.OnStoreItem(this, lastItem);
 #endif
 
     return lastItem;
