@@ -2246,7 +2246,7 @@ class Player : public Unit
         void RemovePlayerbotMgr();
         PlayerbotMgr* GetPlayerbotMgr() { return m_playerbotMgr.get(); }
         void SetBotDeathTimer() { m_deathTimer = 0; }
-        bool isRealPlayer() { return m_session && (m_session->GetRemoteAddress() != "disconnected/bot"); }
+        bool isRealPlayer() const  { return m_session && (m_session->GetRemoteAddress() != "disconnected/bot"); }
 #endif
 
         virtual UnitAI* AI() override { if (m_charmInfo) return m_charmInfo->GetAI(); return nullptr; }
