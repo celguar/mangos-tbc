@@ -168,7 +168,7 @@ void ObjectThreatMessageDeliverer::Visit(CameraMapType& m)
     for (auto& iter : m)
     {
         if (Player* player = iter.getSource()->GetOwner())
-            player->SendThreatMessageToPlayer(i_message);
+            if (player->isRealPlayer()) player->SendThreatMessageToPlayer(i_message);
     }
 }
 

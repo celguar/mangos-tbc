@@ -11394,6 +11394,9 @@ uint32 Unit::GetCombatRatingDamageReduction(CombatRating cr, float rate, float c
 
 void Unit::SendThreatUpdate()
 {
+    if (!GetMap()->HasRealPlayers() || !sWorld.getConfig(CONFIG_BOOL_THREAT_API))
+        return;
+
     ThreatList const& tlist = getThreatManager().getThreatList();
     if (uint32 count = tlist.size())
     {
@@ -11430,6 +11433,9 @@ void Unit::SendThreatUpdate()
 
 void Unit::SendHighestThreatUpdate(HostileReference* pHostilReference)
 {
+    if (!GetMap()->HasRealPlayers() || !sWorld.getConfig(CONFIG_BOOL_THREAT_API))
+        return;
+
     ThreatList const& tlist = getThreatManager().getThreatList();
     if (uint32 count = tlist.size())
     {
@@ -11470,6 +11476,9 @@ void Unit::SendHighestThreatUpdate(HostileReference* pHostilReference)
 
 void Unit::SendThreatClear() const
 {
+    if (!GetMap()->HasRealPlayers() || !sWorld.getConfig(CONFIG_BOOL_THREAT_API))
+        return;
+
     DEBUG_FILTER_LOG(LOG_FILTER_COMBAT, "WORLD: Send SMSG_THREAT_CLEAR Message");
     uint32 number = urand(0, -1);
     std::stringstream data;
@@ -11487,6 +11496,9 @@ void Unit::SendThreatClear() const
 
 void Unit::SendThreatRemove(HostileReference* pHostileReference) const
 {
+    if (!GetMap()->HasRealPlayers() || !sWorld.getConfig(CONFIG_BOOL_THREAT_API))
+        return;
+
     DEBUG_FILTER_LOG(LOG_FILTER_COMBAT, "WORLD: Send SMSG_THREAT_REMOVE Message");
     uint32 number = urand(0, -1);
     std::stringstream data;

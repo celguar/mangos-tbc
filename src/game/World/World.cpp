@@ -578,6 +578,8 @@ void World::LoadConfigSettings(bool reload)
 
     setConfigMinMax(CONFIG_UINT32_START_ARENA_POINTS, "StartArenaPoints", 0, 0, getConfig(CONFIG_UINT32_MAX_ARENA_POINTS));
 
+    setConfig(CONFIG_BOOL_THREAT_API, "Custom.ThreatApi", false);
+
     setConfig(CONFIG_BOOL_ALWAYS_SHOW_QUEST_GREETING, "AlwaysShowQuestGreeting", false);
     
     setConfig(CONFIG_BOOL_HONOR_KILLS_TITLES, "Custom.HonorKillsTitles", false);
