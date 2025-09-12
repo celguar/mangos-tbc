@@ -9060,6 +9060,9 @@ void Unit::SetDeathState(DeathState s)
 
         GetCombatManager().StopEvade();
 
+        // Powers are cleared on death.
+        SetPower(GetPowerType(), 0);
+
         ModifyAuraState(AURA_STATE_HEALTHLESS_20_PERCENT, false);
         ModifyAuraState(AURA_STATE_HEALTHLESS_35_PERCENT, false);
         // remove aurastates allowing special moves
