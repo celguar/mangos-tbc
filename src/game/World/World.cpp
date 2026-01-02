@@ -182,11 +182,11 @@ void World::CleanupsBeforeStop()
         sVoiceChatMgr.SocketDisconnected();          // close voice socket and remove channels
 #endif
 
+    KickAll(true);                                   // save and kick all players
+    UpdateSessions(1);                               // real players unload required UpdateSessions call
 #ifdef ENABLE_PLAYERBOTS
     sRandomPlayerbotMgr.LogoutAllBots();
 #endif
-    KickAll(true);                                   // save and kick all players
-    UpdateSessions(1);                               // real players unload required UpdateSessions call
     sBattleGroundMgr.DeleteAllBattleGrounds();       // unload battleground templates before different singletons destroyed
     sMapMgr.UnloadAll();                             // unload all grids (including locked in memory)
 }
