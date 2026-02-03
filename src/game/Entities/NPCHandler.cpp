@@ -298,7 +298,7 @@ void WorldSession::HandleTrainerBuySpellOpcode(WorldPacket& recv_data)
 
     // learn explicitly or cast explicitly
     // TODO - Are these spells really cast correctly this way?
-    if (trainer_spell->IsCastable())
+    if (trainer_spell->IsCastable() && unit->GetCreatureInfo()->TrainerType != TRAINER_TYPE_PETS)
         _player->CastSpell(_player, trainer_spell->spell, TRIGGERED_OLD_TRIGGERED);
     else
         _player->learnSpell(spellId, false);
